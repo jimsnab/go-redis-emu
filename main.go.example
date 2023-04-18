@@ -30,7 +30,6 @@ type (
 )
 
 var netInterface string
-var serverPort = 6379
 
 func main() {
 	cl := cmdline.NewCommandLine()
@@ -46,7 +45,7 @@ func main() {
 	args := os.Args[1:] // exclude executable name in os.Args[0]
 	err := cl.Process(args)
 	if err != nil {
-		cl.Help(err, "go-redis-emu", args)
+		cl.Help(err, "go-redisemu", args)
 	}
 }
 
@@ -71,7 +70,7 @@ func (eng *mainEngine) start() {
 
 	port := eng.args["port"].(int)
 	if port != 0 {
-		serverPort = port
+		ServerPort = port
 	}
 
 	iface := eng.args["interface"].(string)
@@ -191,9 +190,9 @@ func (eng *mainEngine) startServer() {
 	var err error
 
 	if netInterface == "" {
-		netInterface = fmt.Sprintf(":%d", serverPort)
+		netInterface = fmt.Sprintf(":%d", ServerPort)
 	} else {
-		netInterface = fmt.Sprintf("%s:%d", netInterface, serverPort)
+		netInterface = fmt.Sprintf("%s:%d", netInterface, ServerPort)
 	}
 	eng.server, err = net.Listen("tcp", netInterface)
 	if err != nil {

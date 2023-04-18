@@ -1,4 +1,4 @@
-package goredisemu
+package redisemu
 
 import "github.com/jimsnab/go-lane"
 

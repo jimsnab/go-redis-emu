@@ -1,4 +1,4 @@
-package goredisemu
+package redisemu
 
 func fnHGet(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	keyName := args["key"].(string)

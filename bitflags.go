@@ -1,4 +1,4 @@
-package goredisemu
+package redisemu
 
 type bitflags uint32
 

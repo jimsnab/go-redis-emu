@@ -1,4 +1,4 @@
-package goredisemu
+package redisemu
 
 func fnWatch(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	if ctx.multi {

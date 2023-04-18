@@ -1,4 +1,4 @@
-package goredisemu
+package redisemu
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/google/uuid"
 )
+
+var ServerPort = 6379
 
 type redisStats struct {
 	run_id                     string
@@ -41,7 +43,7 @@ type redisStats struct {
 
 var info redisStats = redisStats{
 	run_id:   strings.ReplaceAll(uuid.NewString(), "-", ""),
-	tcp_port: serverPort,
+	tcp_port: ServerPort,
 }
 var infoMu sync.Mutex
 var started time.Time = time.Now()

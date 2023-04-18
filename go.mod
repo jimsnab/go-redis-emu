@@ -1,4 +1,4 @@
-module goredisemu
+module go-redisemu
 
 go 1.20
 

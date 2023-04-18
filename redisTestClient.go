@@ -3,7 +3,6 @@ package redisemu
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -84,15 +83,10 @@ func NewRedisTestClient() RedisTestClient {
 
 	l := lane.NewLogLane(context.Background())
 
-	content, err := os.ReadFile("redis7-fixed.txt")
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	rd := newRespDeserializer(l, content)
+	rd := newRespDeserializer(l, redis7FixedTxt)
 	value, _, valid := rd.deserializeNext()
 	if !valid {
-		l.Fatal("invalid command definition content")
+		l.Fatal("invalid command redis7FixedTxt definition content")
 	}
 
 	cmds := redisCommands{}
@@ -100,15 +94,10 @@ func NewRedisTestClient() RedisTestClient {
 		l.Fatal("failed to deserialize command definitions")
 	}
 
-	content, err = os.ReadFile("redis7-info.txt")
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	ri := newRespDeserializer(l, content)
+	ri := newRespDeserializer(l, redis7InfoTxt)
 	value, _, valid = ri.deserializeNext()
 	if !valid {
-		l.Fatal("invalid command info definition content")
+		l.Fatal("invalid command info redis7InfoTxt definition content")
 	}
 
 	info := newRedisInfoTable()

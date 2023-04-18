@@ -18,7 +18,7 @@ func TestResp(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rd := newRespDeserializer(l, content)
+	rd := newRespDeserializerFromResource(l, content)
 	value, length, valid := rd.deserializeNext()
 	if !valid {
 		t.Fatal("invalid test input content")

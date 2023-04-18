@@ -16,9 +16,24 @@ type respDeserializer struct {
 	lineNumber int
 }
 
+func forceCrLf(content []byte) []byte {
+	// git has a nasty way of taking out CRs that Redis protocol requires
+	c := string(content)
+	c = strings.ReplaceAll(c, "\r\n", "\n")
+	c = strings.ReplaceAll(c, "\n", "\r\n")
+	return []byte(c)
+}
+
 // parses redis-formatted content into an object structure, returning nil
 // if the content is invalid
 func newRespDeserializer(l lane.Lane, content []byte) *respDeserializer {
+	return &respDeserializer{l: l, content: content, pos: 0, lineNumber: 1, nextPos: -1}
+}
+
+// parses redis-formatted content, coming from a static resource, into an
+// object structure, returning nil if the content is invalid
+func newRespDeserializerFromResource(l lane.Lane, content []byte) *respDeserializer {
+	content = forceCrLf(content)
 	return &respDeserializer{l: l, content: content, pos: 0, lineNumber: 1, nextPos: -1}
 }
 

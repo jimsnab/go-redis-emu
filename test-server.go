@@ -1,7 +1,6 @@
 package redisemu
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -35,10 +34,9 @@ type (
 
 var netInterface string
 
-func NewEmulator(l lane.Lane, enableTrace bool, port int, iface string, persistBasePath string, quitOnKeypress bool) (eng *RedisEmu, err error) {
+func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, quitOnKeypress bool) (eng *RedisEmu, err error) {
 	eng = &RedisEmu{
 		l:               l,
-		enableTrace:     enableTrace,
 		port:            port,
 		iface:           iface,
 		persistBasePath: persistBasePath,
@@ -49,12 +47,8 @@ func NewEmulator(l lane.Lane, enableTrace bool, port int, iface string, persistB
 }
 
 func (eng *RedisEmu) Start() {
-	eng.l = lane.NewLogLane(context.Background())
-
-	fmt.Printf("\n\nREDIS Emulator is now running\n\nPress any key to quit\n\n")
-
-	if !eng.enableTrace {
-		eng.l.SetLogLevel(lane.LogLevelInfo)
+	if eng.quitOnKeypress {
+		fmt.Printf("\n\nREDIS Emulator is now running\n\nPress any key to quit\n\n")
 	}
 
 	if eng.port != 0 {
@@ -191,7 +185,7 @@ func (eng *RedisEmu) startServer() {
 	eng.l.Infof("listening on %s", eng.server.Addr().String())
 
 	// make a command dispatcher
-	rd := newRespDeserializer(eng.l, cmdSpec)
+	rd := newRespDeserializerFromResource(eng.l, cmdSpec)
 	value, _, valid := rd.deserializeNext()
 	if !valid {
 		eng.l.Fatal("invalid command definition content")
@@ -202,7 +196,7 @@ func (eng *RedisEmu) startServer() {
 		eng.l.Fatal("failed to deserialize command definitions")
 	}
 
-	ri := newRespDeserializer(eng.l, cmdInfoSpec)
+	ri := newRespDeserializerFromResource(eng.l, cmdInfoSpec)
 	value, _, valid = ri.deserializeNext()
 	if !valid {
 		eng.l.Fatal("invalid command definition content")

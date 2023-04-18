@@ -1990,7 +1990,7 @@ func TestRedisBLMoveStress(t *testing.T) {
 
 	ts.Lane().SetLogLevel(lane.LogLevelDebug)
 
-	rand.Seed(0)
+	r := rand.New(rand.NewSource(0))
 
 	output := ts.ProcessCommand("rpush", "rot", "hen", "pig", "cow", "mouse", "hawk")
 	if !output.isInt(5) {
@@ -2022,7 +2022,7 @@ func TestRedisBLMoveStress(t *testing.T) {
 	for i := 0; i < 200000; i++ {
 		// pick a random function and wait for an available client
 		var ch chan RedisTestClient
-		f := rand.Intn(19)
+		f := r.Intn(19)
 		if f < 12 {
 			if atomic.AddInt32(&waiters, 1) > 75 {
 				atomic.AddInt32(&waiters, -1)
@@ -2119,32 +2119,32 @@ func TestRedisBLMoveStress(t *testing.T) {
 				}()
 			case 14:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("lpush", "key1", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 15:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("lpush", "key2", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 16:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("rpush", "key1", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 17:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("rpush", "key2", pushes[m])
 					time.Sleep(time.Millisecond)
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 18:
 				go func() {
-					m := rand.Intn(len(terminationClients))
+					m := r.Intn(len(terminationClients))
 					output = client.ProcessCommand("client", "unblock", fmt.Sprintf("%d", m), "error")
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
@@ -2279,7 +2279,7 @@ func TestRedisBLMPopStress(t *testing.T) {
 
 	ts.Lane().SetLogLevel(lane.LogLevelDebug)
 
-	rand.Seed(0)
+	r := rand.New(rand.NewSource(0))
 
 	output := ts.ProcessCommand("rpush", "rot", "hen", "pig", "cow", "mouse", "hawk")
 	if !output.isInt(5) {
@@ -2311,7 +2311,7 @@ func TestRedisBLMPopStress(t *testing.T) {
 	for i := 0; i < 50000; i++ {
 		// pick a random function and wait for an available client
 		var ch chan RedisTestClient
-		f := rand.Intn(18)
+		f := r.Intn(18)
 		if f < 12 {
 			if atomic.AddInt32(&waiters, 1) > 75 {
 				atomic.AddInt32(&waiters, -1)
@@ -2440,25 +2440,25 @@ func TestRedisBLMPopStress(t *testing.T) {
 				}()
 			case 14:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("lpush", "key1", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 15:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("lpush", "key2", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 16:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("rpush", "key1", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()
 			case 17:
 				go func() {
-					m := rand.Intn(len(pushes))
+					m := r.Intn(len(pushes))
 					output = client.ProcessCommand("rpush", "key2", pushes[m])
 					onStressCommandComplete(ch, client, &waiters, f)
 				}()

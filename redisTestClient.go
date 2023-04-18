@@ -83,10 +83,10 @@ func NewRedisTestClient() RedisTestClient {
 
 	l := lane.NewLogLane(context.Background())
 
-	rd := newRespDeserializer(l, redis7FixedTxt)
+	rd := newRespDeserializerFromResource(l, cmdSpec)
 	value, _, valid := rd.deserializeNext()
 	if !valid {
-		l.Fatal("invalid command redis7FixedTxt definition content")
+		l.Fatal("invalid cmdSpec definition content")
 	}
 
 	cmds := redisCommands{}
@@ -94,10 +94,10 @@ func NewRedisTestClient() RedisTestClient {
 		l.Fatal("failed to deserialize command definitions")
 	}
 
-	ri := newRespDeserializer(l, redis7InfoTxt)
+	ri := newRespDeserializerFromResource(l, cmdInfoSpec)
 	value, _, valid = ri.deserializeNext()
 	if !valid {
-		l.Fatal("invalid command info redis7InfoTxt definition content")
+		l.Fatal("invalid cmdInfoSpec definition content")
 	}
 
 	info := newRedisInfoTable()

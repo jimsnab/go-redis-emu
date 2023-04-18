@@ -1,0 +1,8 @@
+test-commands.txt
+test-commands-fixed.txt
+redis-commands-test-*.json
+*.exe
+info*.hex
+info*.txt
+keys.txt
+hello*

@@ -1,4 +1,4 @@
-module go-redisemu
+module github.com/jimsnab/go-redisemu
 
 go 1.20
 

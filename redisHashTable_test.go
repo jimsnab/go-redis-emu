@@ -9,7 +9,7 @@ import (
 )
 
 func TestHSet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing pair test
@@ -127,7 +127,7 @@ func TestHSet(t *testing.T) {
 }
 
 func TestHGet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// argument test
@@ -165,8 +165,8 @@ func TestHGet(t *testing.T) {
 	}
 }
 
-func TestHGetAll(t *testing.T) {
-	ts := NewRedisTestClient()
+func TestHGetAllResp2(t *testing.T) {
+	ts := NewRedisTestClientResp2(t)
 	defer ts.Close()
 
 	// missing key test
@@ -219,8 +219,62 @@ func TestHGetAll(t *testing.T) {
 	}
 }
 
+func TestHGetAllResp3(t *testing.T) {
+	ts := NewRedisTestClientResp3(t)
+	defer ts.Close()
+
+	// missing key test
+	output := ts.ProcessCommand("hgetall", "missing")
+	if !output.isMap(map[any]any{}) {
+		t.Fatal("hgetall resp3 missing key fail")
+	}
+
+	// basic pair
+	output = ts.ProcessCommand("hset", "k1", "field1", "Hello")
+	if !output.isInt(1) {
+		t.Fatal("hgetall resp3 basic set fail")
+	}
+
+	output = ts.ProcessCommand("hgetall", "k1")
+	if !output.isMap(map[any]any{"field1": "Hello"}) {
+		t.Fatal("hgetall resp3 basic getall fail")
+	}
+
+	// more pairs
+	output = ts.ProcessCommand("hset", "k1", "field2", "Hi")
+	if !output.isInt(1) {
+		t.Fatal("hgetall resp3 set field2 fail")
+	}
+
+	output = ts.ProcessCommand("hgetall", "k1")
+	if !output.isMap(map[any]any{"field1": "Hello", "field2": "Hi"}) {
+		t.Fatal("hgetall resp3 getall 2 fail")
+	}
+
+	output = ts.ProcessCommand("hset", "k1", "field3", "World")
+	if !output.isInt(1) {
+		t.Fatal("hgetall resp3 set field3 fail")
+	}
+
+	output = ts.ProcessCommand("hgetall", "k1")
+	if !output.isMap(map[any]any{"field1": "Hello", "field2": "Hi", "field3": "World"}) {
+		t.Fatal("hgetall resp3 getall 2 fail")
+	}
+
+	// wrong type
+	output = ts.ProcessCommand("rpush", "list", "data")
+	if !output.isInt(1) {
+		t.Fatal("hgetall resp3 prepare list fail")
+	}
+
+	output = ts.ProcessCommand("hgetall", "list")
+	if !output.isErrorType() {
+		t.Fatal("hgetall resp3 get pairs from a list fail")
+	}
+}
+
 func TestHDel(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing arg
@@ -280,7 +334,7 @@ func TestHDel(t *testing.T) {
 }
 
 func TestHExists(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing arg
@@ -324,7 +378,7 @@ func TestHExists(t *testing.T) {
 }
 
 func TestHIncrBy(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing arg
@@ -386,7 +440,7 @@ func TestHIncrBy(t *testing.T) {
 }
 
 func TestHIncrByFloat(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing arg
@@ -476,7 +530,7 @@ func TestHIncrByFloat(t *testing.T) {
 }
 
 func TestHKeys(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -514,7 +568,7 @@ func TestHKeys(t *testing.T) {
 }
 
 func TestHLen(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -552,7 +606,7 @@ func TestHLen(t *testing.T) {
 }
 
 func TestHMGet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -590,7 +644,7 @@ func TestHMGet(t *testing.T) {
 }
 
 func TestHMSet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// new key
@@ -629,8 +683,8 @@ func TestHMSet(t *testing.T) {
 	}
 }
 
-func TestHRandField(t *testing.T) {
-	ts := NewRedisTestClient()
+func TestHRandFieldResp2(t *testing.T) {
+	ts := NewRedisTestClientResp2(t)
 	defer ts.Close()
 
 	// missing key
@@ -715,8 +769,22 @@ func TestHRandField(t *testing.T) {
 	}
 }
 
+func TestHRandFieldResp3(t *testing.T) {
+	ts := NewRedisTestClientResp3(t)
+	defer ts.Close()
+
+	// values
+	ts.ProcessCommand("hset", "multiple", "field1", "value1")
+	ts.ProcessCommand("hset", "multiple", "field2", "value2")
+	ts.ProcessCommand("hset", "multiple", "field3", "value3")
+	output := ts.ProcessCommand("hrandfield", "multiple", "3", "withvalues")
+	if !output.isArrayMapResp3(map[any]any{"field1": "value1", "field2": "value2", "field3": "value3"}) {
+		t.Fatal("hrandfield resp3 withvalues full table fail")
+	}
+}
+
 func TestHScan(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -762,7 +830,7 @@ func TestHScan(t *testing.T) {
 }
 
 func TestHSetNX(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -797,7 +865,7 @@ func TestHSetNX(t *testing.T) {
 }
 
 func TestHStrLen(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -826,7 +894,7 @@ func TestHStrLen(t *testing.T) {
 }
 
 func TestHVals(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key

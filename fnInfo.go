@@ -166,7 +166,7 @@ func fnInfo(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 		}
 	}
 
-	output.data = respBulkString(sb.String())
+	output.data = respVerbatimString{format: "txt", text: sb.String()}
 	return
 }
 

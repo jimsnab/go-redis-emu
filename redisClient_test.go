@@ -9,7 +9,7 @@ import (
 )
 
 func TestRedisEcho(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("echo", "Hello World!")
@@ -19,7 +19,7 @@ func TestRedisEcho(t *testing.T) {
 }
 
 func TestRedisPing(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("ping")
@@ -34,7 +34,7 @@ func TestRedisPing(t *testing.T) {
 }
 
 func TestRedisClientName(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "setname", "invalid name")
@@ -69,7 +69,7 @@ func TestRedisClientName(t *testing.T) {
 }
 
 func TestRedisClientId(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "id")
@@ -79,7 +79,7 @@ func TestRedisClientId(t *testing.T) {
 }
 
 func TestRedisClientInfo(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "info")
@@ -110,7 +110,7 @@ func TestRedisClientInfo(t *testing.T) {
 }
 
 func TestRedisClientKillOldSyntax(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "kill", "1.2.3.4:80")
@@ -125,7 +125,7 @@ func TestRedisClientKillOldSyntax(t *testing.T) {
 }
 
 func TestRedisClientKillId(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -137,7 +137,7 @@ func TestRedisClientKillId(t *testing.T) {
 }
 
 func TestRedisClientKillTypeNormal(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -149,7 +149,7 @@ func TestRedisClientKillTypeNormal(t *testing.T) {
 }
 
 func TestRedisClientKillTypeMaster(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -161,7 +161,7 @@ func TestRedisClientKillTypeMaster(t *testing.T) {
 }
 
 func TestRedisClientKillTypeSlaveReplicaPubsub(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -183,7 +183,7 @@ func TestRedisClientKillTypeSlaveReplicaPubsub(t *testing.T) {
 }
 
 func TestRedisClientKillUser(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -200,7 +200,7 @@ func TestRedisClientKillUser(t *testing.T) {
 }
 
 func TestRedisClientKillAddr(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -217,7 +217,7 @@ func TestRedisClientKillAddr(t *testing.T) {
 }
 
 func TestRedisClientKillLAddr(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -234,7 +234,7 @@ func TestRedisClientKillLAddr(t *testing.T) {
 }
 
 func TestRedisClientKillSkipMe(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -251,7 +251,7 @@ func TestRedisClientKillSkipMe(t *testing.T) {
 }
 
 func TestRedisClientKillSyntax(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "kill", "skipme", "maybe")
@@ -266,7 +266,7 @@ func TestRedisClientKillSyntax(t *testing.T) {
 }
 
 func TestRedisClientKillRepeated(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "kill", "skipme", "no", "skipme", "yes")
@@ -294,7 +294,7 @@ func countOccurences(text, searchText string) (count int) {
 }
 
 func TestRedisClientList(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -349,7 +349,7 @@ func TestRedisClientList(t *testing.T) {
 }
 
 func TestRedisClientNoEvict(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("client", "no-evict", "on")
@@ -364,7 +364,7 @@ func TestRedisClientNoEvict(t *testing.T) {
 }
 
 func TestRedisClientSelect(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("set", "dog", "bark")
@@ -450,7 +450,7 @@ func TestRedisClientSelect(t *testing.T) {
 }
 
 func TestRedisUnblock(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()

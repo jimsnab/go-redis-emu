@@ -7,7 +7,7 @@ import (
 )
 
 func TestRedisCopyStrings(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key tests
@@ -102,7 +102,7 @@ func TestRedisCopyStrings(t *testing.T) {
 }
 
 func TestRedisDel(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -176,7 +176,7 @@ func TestRedisDel(t *testing.T) {
 }
 
 func TestRedisUnlink(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// unlink a missing key test
@@ -250,7 +250,7 @@ func TestRedisUnlink(t *testing.T) {
 }
 
 func TestRedisExists(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing args test
@@ -306,7 +306,7 @@ func TestRedisExists(t *testing.T) {
 }
 
 func TestRedisDumpRestore(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic dump restore cycle
@@ -407,7 +407,7 @@ func TestRedisDumpRestore(t *testing.T) {
 }
 
 func TestRedisExpire(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// key missing test
@@ -520,7 +520,7 @@ func TestRedisExpire(t *testing.T) {
 }
 
 func TestRedisExpireAt(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// expire at on missing key
@@ -654,7 +654,7 @@ func TestRedisExpireAt(t *testing.T) {
 }
 
 func TestRedisExpireTime(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic expire time test
@@ -695,7 +695,7 @@ func TestRedisExpireTime(t *testing.T) {
 }
 
 func TestRedisPExpire(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -808,7 +808,7 @@ func TestRedisPExpire(t *testing.T) {
 }
 
 func TestRedisPExpireAt(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -942,7 +942,7 @@ func TestRedisPExpireAt(t *testing.T) {
 }
 
 func TestRedisPExpireTime(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic expiretime test
@@ -983,7 +983,7 @@ func TestRedisPExpireTime(t *testing.T) {
 }
 
 func TestRedisPersist(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic persist test
@@ -1023,7 +1023,7 @@ func TestRedisPersist(t *testing.T) {
 }
 
 func TestRedisTtl(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic ttl test
@@ -1072,7 +1072,7 @@ func TestRedisTtl(t *testing.T) {
 }
 
 func TestRedisPTtl(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic ms ttl test
@@ -1125,7 +1125,7 @@ func TestRedisPTtl(t *testing.T) {
 }
 
 func TestRedisRandomKey(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// empty db test
@@ -1161,7 +1161,7 @@ func TestRedisRandomKey(t *testing.T) {
 }
 
 func TestRedisRename(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic rename test
@@ -1198,7 +1198,7 @@ func TestRedisRename(t *testing.T) {
 }
 
 func TestRedisRenameNx(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic rename no overwrite test
@@ -1246,7 +1246,7 @@ func TestRedisRenameNx(t *testing.T) {
 }
 
 func TestRedisScan(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	_, isTestClient := ts.(*testClient)
@@ -1356,7 +1356,7 @@ func TestRedisScan(t *testing.T) {
 }
 
 func TestRedisTouch(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// touch missing key test
@@ -1384,7 +1384,7 @@ func TestRedisTouch(t *testing.T) {
 }
 
 func TestRedisType(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -1417,7 +1417,7 @@ func TestRedisType(t *testing.T) {
 }
 
 func TestRedisKeys(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// empty test
@@ -1538,7 +1538,7 @@ func TestRedisKeys(t *testing.T) {
 }
 
 func TestRedisDiagnotics(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// empty test
@@ -1556,7 +1556,7 @@ func TestRedisDiagnotics(t *testing.T) {
 }
 
 func TestRedisFlushAll(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("set", "cat", "meow")
@@ -1596,7 +1596,7 @@ func TestRedisFlushAll(t *testing.T) {
 }
 
 func TestRedisFlushDb(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("set", "cat", "meow")

@@ -8,7 +8,7 @@ import (
 )
 
 func TestRedisAppend(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// create key test
@@ -41,7 +41,7 @@ func TestRedisAppend(t *testing.T) {
 }
 
 func TestRedisDecr(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// decr from 1 to -1
@@ -89,7 +89,7 @@ func TestRedisDecr(t *testing.T) {
 }
 
 func TestRedisDecrBy(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// test various decrement intervals
@@ -163,7 +163,7 @@ func TestRedisDecrBy(t *testing.T) {
 }
 
 func TestRedisGet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// no args test
@@ -202,7 +202,7 @@ func TestRedisGet(t *testing.T) {
 }
 
 func TestRedisGetDel(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// simple get & del test
@@ -240,7 +240,7 @@ func TestRedisGetDel(t *testing.T) {
 }
 
 func TestRedisGetEx(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// one second expire test
@@ -431,7 +431,7 @@ func TestRedisGetEx(t *testing.T) {
 }
 
 func testSubstr(t *testing.T, cmdName string) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// various substr range tests
@@ -513,7 +513,7 @@ func TestRedisGetRange(t *testing.T) {
 }
 
 func TestRedisGetSet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// get & set basic test
@@ -551,7 +551,7 @@ func TestRedisGetSet(t *testing.T) {
 }
 
 func TestRedisIncr(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// negative to positive
@@ -599,7 +599,7 @@ func TestRedisIncr(t *testing.T) {
 }
 
 func TestRedisIncrBy(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// incrby various intervals, exercise sign changes
@@ -673,7 +673,7 @@ func TestRedisIncrBy(t *testing.T) {
 }
 
 func TestRedisIncrFloat(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// various float add tests
@@ -771,8 +771,8 @@ func TestRedisIncrFloat(t *testing.T) {
 	}
 }
 
-func TestRedisLcs(t *testing.T) {
-	ts := NewRedisTestClient()
+func TestRedisLcsResp2(t *testing.T) {
+	ts := NewRedisTestClientResp2(t)
 	defer ts.Close()
 
 	// basic lcs len test
@@ -796,9 +796,8 @@ func TestRedisLcs(t *testing.T) {
 		t.Fatal("lcs step 4 fail")
 	}
 
-	expected := []any{
-		"matches",
-		[]any{
+	expected := map[any]any{
+		"matches": []any{
 			[]any{
 				[]any{4, 7},
 				[]any{5, 8},
@@ -808,8 +807,106 @@ func TestRedisLcs(t *testing.T) {
 				[]any{0, 1},
 			},
 		},
-		"len",
-		6,
+		"len": 6,
+	}
+
+	// basic lcs idx test
+	output = ts.ProcessCommand("lcs", "key1", "key2", "idx")
+	if !output.isArrayMap(expected) {
+		t.Fatal("lcs step 5 fail")
+	}
+
+	// missing key tests
+	output = ts.ProcessCommand("lcs", "missing", "key2")
+	if !output.isString("") {
+		t.Fatal("lcs missing key 1 fail")
+	}
+
+	output = ts.ProcessCommand("lcs", "key1", "missing")
+	if !output.isString("") {
+		t.Fatal("lcs missing key 2 fail")
+	}
+
+	// minmatchlen test
+	expected = map[any]any{
+		"matches": []any{
+			[]any{
+				[]any{4, 7},
+				[]any{5, 8},
+			},
+		},
+		"len": 6,
+	}
+	output = ts.ProcessCommand("lcs", "key1", "key2", "idx", "minmatchlen", "4")
+	if !output.isArrayMap(expected) {
+		t.Fatal("lcs step 6 fail")
+	}
+
+	// withmatchlen test
+	expected = map[any]any{
+		"matches": []any{
+			[]any{
+				[]any{4, 7},
+				[]any{5, 8},
+				4,
+			},
+		},
+		"len": 6,
+	}
+	output = ts.ProcessCommand("lcs", "key1", "key2", "idx", "minmatchlen", "4", "withmatchlen")
+	if !output.isArrayMap(expected) {
+		t.Fatal("lcs step 6 fail")
+	}
+
+	// wrong type test
+	output = ts.ProcessCommand("rpush", "list", "x")
+	if !output.isInt(1) {
+		t.Fatal("lcs can't make list")
+	}
+
+	output = ts.ProcessCommand("lcs", "list", "list", "idx")
+	if !output.isErrorType() {
+		t.Fatal("lcs invalid op on list")
+	}
+}
+
+func TestRedisLcsResp3(t *testing.T) {
+	ts := NewRedisTestClientResp3(t)
+	defer ts.Close()
+
+	// basic lcs len test
+	output := ts.ProcessCommand("set", "key1", "ohmytext")
+	if !output.isString("OK") {
+		t.Fatal("lcs step 1 fail")
+	}
+
+	output = ts.ProcessCommand("set", "key2", "mynewtext")
+	if !output.isString("OK") {
+		t.Fatal("lcs step 2 fail")
+	}
+
+	output = ts.ProcessCommand("lcs", "key1", "key2")
+	if !output.isString("mytext") {
+		t.Fatal("lcs step 3 fail")
+	}
+
+	output = ts.ProcessCommand("lcs", "key1", "key2", "len")
+	if !output.isInt(6) {
+		t.Fatal("lcs step 4 fail")
+	}
+
+	expected := map[any]any{
+		"matches": []any{
+			[]any{
+				[]any{4, 7},
+				[]any{5, 8},
+			},
+			[]any{
+				[]any{2, 3},
+				[]any{0, 1},
+			},
+		},
+		"len": 6,
 	}
 
 	// basic lcs idx test
@@ -830,16 +927,14 @@ func TestRedisLcs(t *testing.T) {
 	}
 
 	// minmatchlen test
-	expected = []any{
-		"matches",
-		[]any{
+	expected = map[any]any{
+		"matches": []any{
 			[]any{
 				[]any{4, 7},
 				[]any{5, 8},
 			},
 		},
-		"len",
-		6,
+		"len": 6,
 	}
 	output = ts.ProcessCommand("lcs", "key1", "key2", "idx", "minmatchlen", "4")
 	if !output.isValue(expected) {
@@ -847,17 +942,15 @@ func TestRedisLcs(t *testing.T) {
 	}
 
 	// withmatchlen test
-	expected = []any{
-		"matches",
-		[]any{
+	expected = map[any]any{
+		"matches": []any{
 			[]any{
 				[]any{4, 7},
 				[]any{5, 8},
 				4,
 			},
 		},
-		"len",
-		6,
+		"len": 6,
 	}
 	output = ts.ProcessCommand("lcs", "key1", "key2", "idx", "minmatchlen", "4", "withmatchlen")
 	if !output.isValue(expected) {
@@ -877,7 +970,7 @@ func TestRedisLcs(t *testing.T) {
 }
 
 func TestRedisMget(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key args test
@@ -936,7 +1029,7 @@ func TestRedisMget(t *testing.T) {
 }
 
 func TestRedisMset(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// invalid arg tests
@@ -987,7 +1080,7 @@ func TestRedisMset(t *testing.T) {
 }
 
 func TestRedisMsetNx(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// invalid arg tests
@@ -1044,7 +1137,7 @@ func TestRedisMsetNx(t *testing.T) {
 }
 
 func TestRedisPSetEx(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// ms expiration test
@@ -1078,7 +1171,7 @@ func TestRedisPSetEx(t *testing.T) {
 }
 
 func TestRedisSet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing arg test
@@ -1335,7 +1428,7 @@ func TestRedisSet(t *testing.T) {
 }
 
 func TestRedisSetArgPos(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// argument position test
@@ -1346,7 +1439,7 @@ func TestRedisSetArgPos(t *testing.T) {
 }
 
 func TestRedisSetEx(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// second expiration
@@ -1382,7 +1475,7 @@ func TestRedisSetEx(t *testing.T) {
 }
 
 func TestRedisSetNx(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// set non existant test
@@ -1420,7 +1513,7 @@ func TestRedisSetNx(t *testing.T) {
 }
 
 func TestRedisSetRange(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// replace first char test
@@ -1496,7 +1589,7 @@ func TestRedisSetRange(t *testing.T) {
 }
 
 func TestRedisStrLen(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic test

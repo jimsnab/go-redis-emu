@@ -242,7 +242,7 @@ func fnLcs(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	matchLen, matches, matchText := ls.longestSequence(int(minMatchLen), hasWithMatchLen)
 
 	if hasIdx {
-		result := []any{"matches", matches, "len", matchLen}
+		result := map[any]any{"matches": matches, "len": matchLen}
 		output = nativeValueToResp(result)
 	} else if hasLength {
 		output = nativeValueToResp(matchLen)

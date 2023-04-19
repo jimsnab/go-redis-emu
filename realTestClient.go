@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -177,6 +178,7 @@ func (rrc *realRedisClient) issueCommand(cxn net.Conn, cmdName string, args ...a
 				strings.EqualFold(args[0].(string), "no-evict") {
 				rrc.noEvict = strings.EqualFold(args[1].(string), "on")
 			}
+
 			return
 		}
 

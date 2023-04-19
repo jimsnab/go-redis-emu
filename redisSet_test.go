@@ -3,7 +3,7 @@ package redisemu
 import "testing"
 
 func TestSAdd(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// single member test
@@ -43,7 +43,7 @@ func TestSAdd(t *testing.T) {
 }
 
 func TestSCard(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -87,7 +87,7 @@ func TestSCard(t *testing.T) {
 }
 
 func TestSDiff(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -194,7 +194,7 @@ func TestSDiff(t *testing.T) {
 }
 
 func TestSDiffStore(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -317,7 +317,7 @@ func TestSDiffStore(t *testing.T) {
 }
 
 func TestSInter(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -435,7 +435,7 @@ func TestSInter(t *testing.T) {
 }
 
 func TestSInterStore(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -516,7 +516,7 @@ func TestSInterStore(t *testing.T) {
 }
 
 func TestSInterCard(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -613,7 +613,7 @@ func TestSInterCard(t *testing.T) {
 }
 
 func TestSInterCardWithLimit(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// create a set with multiple common members
@@ -653,7 +653,7 @@ func TestSInterCardWithLimit(t *testing.T) {
 }
 
 func TestSIsMember(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// add a single member to a set
@@ -692,7 +692,7 @@ func TestSIsMember(t *testing.T) {
 }
 
 func TestSMembers(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// empty set
@@ -733,7 +733,7 @@ func TestSMembers(t *testing.T) {
 }
 
 func TestSMIsMember(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -797,7 +797,7 @@ func TestSMIsMember(t *testing.T) {
 }
 
 func TestSMove(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -856,7 +856,7 @@ func TestSMove(t *testing.T) {
 }
 
 func TestSRandMember(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -920,7 +920,7 @@ func TestSRandMember(t *testing.T) {
 }
 
 func TestSRem(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -990,7 +990,7 @@ func TestSRem(t *testing.T) {
 }
 
 func TestSScan(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1036,7 +1036,7 @@ func TestSScan(t *testing.T) {
 }
 
 func TestSScanMatchCount(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// prepare set with multiple members
@@ -1054,8 +1054,25 @@ func TestSScanMatchCount(t *testing.T) {
 	if !ok || str == "0" {
 		t.Fatal("sscan match and count cursor fail")
 	}
-	if !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) {
+
+	// it is possible for the scan to return an empty array
+	if !a[1].isArray() && !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) {
 		t.Fatal("sscan match and count fail")
+	}
+
+	if a[1].isArray() {
+		output = ts.ProcessCommand("sscan", "theset", str, "match", "member1*", "count", "2")
+		a, ok = output.toArray()
+		if !ok || len(a) != 2 {
+			t.Fatal("sscan #2 match and count return array fail")
+		}
+		str, ok = a[0].toString()
+		if !ok || str == "0" {
+			t.Fatal("sscan #2 match and count cursor fail")
+		}
+		if !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) {
+			t.Fatal("sscan #2 match and count fail")
+		}
 	}
 
 	// test SSCAN with match option and no count
@@ -1088,7 +1105,7 @@ func TestSScanMatchCount(t *testing.T) {
 }
 
 func TestSUnion(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -1211,7 +1228,7 @@ func TestSUnion(t *testing.T) {
 }
 
 func TestSUnionStore(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys
@@ -1328,7 +1345,7 @@ func TestSUnionStore(t *testing.T) {
 }
 
 func TestSUnionStoreThreeSets(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// create 3 sets with unique members

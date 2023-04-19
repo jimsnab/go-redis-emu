@@ -12,7 +12,7 @@ import (
 )
 
 func TestRedisLPushPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// pop missing key tests
@@ -145,7 +145,7 @@ func TestRedisLPushPop(t *testing.T) {
 }
 
 func TestRedisRPushPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key tests
@@ -280,7 +280,7 @@ func TestRedisRPushPop(t *testing.T) {
 }
 
 func TestRedisPushLPopR(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("lpush", "key1", "cat", "dog", "pig")
@@ -300,7 +300,7 @@ func TestRedisPushLPopR(t *testing.T) {
 }
 
 func TestRedisPushRPopL(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("rpush", "key1", "cat", "dog", "pig")
@@ -320,7 +320,7 @@ func TestRedisPushRPopL(t *testing.T) {
 }
 
 func TestRedisLIndex(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key tests
@@ -387,7 +387,7 @@ func TestRedisLIndex(t *testing.T) {
 }
 
 func TestRedisLInsert(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key tests
@@ -468,7 +468,7 @@ func TestRedisLInsert(t *testing.T) {
 }
 
 func TestRedisLLen(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("llen", "key1")
@@ -498,7 +498,7 @@ func TestRedisLLen(t *testing.T) {
 }
 
 func TestRedisLMove(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -663,7 +663,7 @@ func TestRedisLMove(t *testing.T) {
 }
 
 func TestRedisLMPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key testa
@@ -791,7 +791,7 @@ func TestRedisLMPop(t *testing.T) {
 }
 
 func TestRedisLPos(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -989,7 +989,7 @@ func TestRedisLPos(t *testing.T) {
 }
 
 func TestRedisLPushXPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1049,7 +1049,7 @@ func TestRedisLPushXPop(t *testing.T) {
 }
 
 func TestRedisRPushXPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1109,7 +1109,7 @@ func TestRedisRPushXPop(t *testing.T) {
 }
 
 func TestRedisLRem(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1190,7 +1190,7 @@ func TestRedisLRem(t *testing.T) {
 }
 
 func TestRedisLRange(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1307,7 +1307,7 @@ func TestRedisLRange(t *testing.T) {
 }
 
 func TestRedisLSet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1435,7 +1435,7 @@ func TestRedisLSet(t *testing.T) {
 }
 
 func TestRedisLTrim(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key
@@ -1617,7 +1617,7 @@ func TestRedisLTrim(t *testing.T) {
 }
 
 func TestRedisRPopLPush(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing key test
@@ -1724,7 +1724,7 @@ func TestRedisRPopLPush(t *testing.T) {
 }
 
 func TestRedisBLMove(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -1895,7 +1895,7 @@ func TestRedisBLMove(t *testing.T) {
 }
 
 func TestRedisBLMove2(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -1985,7 +1985,7 @@ func onStressCommandComplete(ch chan RedisTestClient, client RedisTestClient, wa
 }
 
 func TestRedisBLMoveStress(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	ts.Lane().SetLogLevel(lane.LogLevelDebug)
@@ -2165,7 +2165,7 @@ func TestRedisBLMoveStress(t *testing.T) {
 }
 
 func TestRedisBLMPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -2274,7 +2274,7 @@ func TestRedisBLMPop(t *testing.T) {
 }
 
 func TestRedisBLMPopStress(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	ts.Lane().SetLogLevel(lane.LogLevelDebug)
@@ -2479,7 +2479,7 @@ func TestRedisBLMPopStress(t *testing.T) {
 }
 
 func TestRedisBLPushPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -2562,7 +2562,7 @@ func TestRedisBLPushPop(t *testing.T) {
 }
 
 func TestRedisBRPushPop(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -2645,7 +2645,7 @@ func TestRedisBRPushPop(t *testing.T) {
 }
 
 func TestRedisBRPopLPush(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts2 := ts.AdditionalClient()
 	defer ts2.Close()
@@ -2735,7 +2735,7 @@ func TestRedisBRPopLPush(t *testing.T) {
 }
 
 func TestRedisBPushPopExecNils(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// start multi
@@ -2777,7 +2777,7 @@ func TestRedisBPushPopExecNils(t *testing.T) {
 }
 
 func TestRedisBPushPopExecNonNils(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// make a test list

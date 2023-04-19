@@ -96,6 +96,7 @@ var handlerTable = map[string]cmdHandler{
 	"info":                    fnInfo,
 	"hdel":                    fnHDel,
 	"hexists":                 fnHExists,
+	"hello":                   fnHello,
 	"hget":                    fnHGet,
 	"hgetall":                 fnHGetAll,
 	"hincrby":                 fnHIncrBy,
@@ -427,7 +428,11 @@ func (cd *cmdDispatcher) dispatchHandler(ctx *cmdContext) (output respValue) {
 		return
 	}
 
-	output.data = result.data
+	if ctx.cs.respVersion == 2 {
+		output = resp3To2(result)
+	} else {
+		output.data = result.data
+	}
 
 	traceJson, _ := json.Marshal(output.toNative())
 	l.Tracef("response: %s", string(traceJson))

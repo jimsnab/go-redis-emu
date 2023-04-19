@@ -39,6 +39,7 @@ type (
 		waiting     bool
 		closing     bool
 		inbound     []byte
+		respVersion int
 	}
 )
 

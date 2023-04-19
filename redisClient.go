@@ -240,7 +240,7 @@ func fnClientList(ctx *cmdContext, args map[string]any) (output respValue, err e
 		}
 	})
 
-	output.data = respBulkString(list.String())
+	output.data = respVerbatimString{format: "txt", text: list.String()}
 	return
 }
 

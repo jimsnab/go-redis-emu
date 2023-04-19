@@ -3,7 +3,7 @@ package redisemu
 import "testing"
 
 func TestRedisMissingMulti(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("exec")
@@ -13,7 +13,7 @@ func TestRedisMissingMulti(t *testing.T) {
 }
 
 func TestRedisEmptyMulti(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("multi")
@@ -28,7 +28,7 @@ func TestRedisEmptyMulti(t *testing.T) {
 }
 
 func TestRedisOneMulti(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("multi")
@@ -48,7 +48,7 @@ func TestRedisOneMulti(t *testing.T) {
 }
 
 func TestRedisDoubleMulti(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("multi")
@@ -63,7 +63,7 @@ func TestRedisDoubleMulti(t *testing.T) {
 }
 
 func TestRedisOneWatch(t *testing.T) {
-	ts1 := NewRedisTestClient()
+	ts1 := NewRedisTestClient(t)
 	defer ts1.Close()
 	ts2 := ts1.AdditionalClient()
 	defer ts2.Close()
@@ -100,7 +100,7 @@ func TestRedisOneWatch(t *testing.T) {
 }
 
 func TestRedisOneWatchPreexisting(t *testing.T) {
-	ts1 := NewRedisTestClient()
+	ts1 := NewRedisTestClient(t)
 	defer ts1.Close()
 	ts2 := ts1.AdditionalClient()
 	defer ts2.Close()
@@ -137,7 +137,7 @@ func TestRedisOneWatchPreexisting(t *testing.T) {
 }
 
 func TestRedisOneWatchNoChange(t *testing.T) {
-	ts1 := NewRedisTestClient()
+	ts1 := NewRedisTestClient(t)
 	defer ts1.Close()
 
 	output := ts1.ProcessCommand("set", "key1", "dog")
@@ -167,7 +167,7 @@ func TestRedisOneWatchNoChange(t *testing.T) {
 }
 
 func TestRedisTwoMulti(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("multi")
@@ -192,7 +192,7 @@ func TestRedisTwoMulti(t *testing.T) {
 }
 
 func TestRedisUnwatch(t *testing.T) {
-	ts1 := NewRedisTestClient()
+	ts1 := NewRedisTestClient(t)
 	defer ts1.Close()
 	ts2 := ts1.AdditionalClient()
 	defer ts2.Close()
@@ -229,7 +229,7 @@ func TestRedisUnwatch(t *testing.T) {
 }
 
 func TestRedisAbortExec(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("multi")

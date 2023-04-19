@@ -1866,11 +1866,36 @@ func (dsc *dataStoreCommand) getHashTable(keyName string) (val respValue, ve val
 		return
 	}
 
-	a := make([]string, 0, m.count*2)
+	rm := make(respMap, m.count)
 	for it := m.createIterator(); it.next(); {
-		a = append(a, it.key, it.value.(string))
+		rm[nativeValueToResp(it.key)] = nativeValueToResp(it.value.(string))
 	}
-	val = nativeValueToResp(a)
+	val.data = rm
+	return
+}
+
+func (dsc *dataStoreCommand) getHashTableSet(keyName string) (val respValue, ve valueExists) {
+	dsc.lock()
+	defer dsc.unlock()
+
+	sk, objExists := dsc.getKeyObjectUnlocked(keyName)
+	if !objExists {
+		ve = VALUE_DOESNT_EXIST
+		val.data = respSet{}
+		return
+	}
+
+	m := sk.getHashTable()
+	if m == nil {
+		ve = VALUE_WRONG_TYPE
+		return
+	}
+
+	s := make(respSet, m.count)
+	for it := m.createIterator(); it.next(); {
+		s[nativeValueToResp(it.key)] = struct{}{}
+	}
+	val.data = s
 	return
 }
 

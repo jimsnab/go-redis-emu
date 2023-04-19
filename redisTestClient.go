@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"testing"
 	"time"
 
 	"github.com/jimsnab/go-lane"
@@ -76,7 +77,11 @@ type (
 
 var testPort int32 = 50000
 
-func NewRedisTestClient() RedisTestClient {
+func NewRedisTestClient(t *testing.T) RedisTestClient {
+	return NewRedisTestClientResp3(t)
+}
+
+func NewRedisTestClientResp2(t *testing.T) RedisTestClient {
 	if testRealRedis {
 		return newRealRedisClient()
 	}
@@ -117,6 +122,15 @@ func NewRedisTestClient() RedisTestClient {
 	ts.disp = newCmdDispatcher(cmds, info, ts.dss)
 	ts.cs = newClientState(l, ts, ts.disp)
 	return ts
+}
+
+func NewRedisTestClientResp3(t *testing.T) RedisTestClient {
+	client := newRealRedisClient()
+	output := client.ProcessCommand("HELLO", "3")
+	if _, ok := output.data.(respMap); !ok {
+		t.Fatal("resp3 hello failed")
+	}
+	return client
 }
 
 func (ts *testClient) Lane() lane.Lane {

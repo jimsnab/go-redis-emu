@@ -8,7 +8,7 @@ import (
 )
 
 func TestBitCountMissing(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// missing keys tests
@@ -50,7 +50,7 @@ func TestBitCountMissing(t *testing.T) {
 }
 
 func TestBitCountOneByteZeroBit(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// tests of various ranges for a zero byte
@@ -108,7 +108,7 @@ func TestBitCountOneByteZeroBit(t *testing.T) {
 }
 
 func TestBitCountOneByteOneBit(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// tests of various ranges for a byte with one bit set
@@ -197,7 +197,7 @@ func TestBitCountOneByteOneBit(t *testing.T) {
 }
 
 func TestBitCountTwoBytesThreeBits(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// tests of various ranges across two bytes that have three bits set
@@ -280,7 +280,7 @@ func TestBitCountTwoBytesThreeBits(t *testing.T) {
 }
 
 func TestBitfieldGet(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// invalid arg test
@@ -505,8 +505,8 @@ func TestBitfieldGet(t *testing.T) {
 	}
 }
 
-func TestBitfieldSet(t *testing.T) {
-	ts := NewRedisTestClient()
+func TestBitfieldSetResp2(t *testing.T) {
+	ts := NewRedisTestClientResp2(t)
 	defer ts.Close()
 
 	// set and return value verification tests
@@ -583,8 +583,40 @@ func TestBitfieldSet(t *testing.T) {
 	}
 }
 
+func TestBitfieldSetResp3(t *testing.T) {
+	ts := NewRedisTestClientResp3(t)
+	defer ts.Close()
+
+	// set and return value verification tests
+	output := ts.ProcessCommand("bitfield", "mykey", "set", "i4", "0", "13")
+	if !output.isArray(0) {
+		t.Fatal("bitfield resp3 set step 1 fail")
+	}
+
+	output = ts.ProcessCommand("bitfield", "mykey", "set", "i4", "0", "-1")
+	if !output.isArray(-3) {
+		t.Fatal("bitfield resp3 set step 2 fail")
+	}
+
+	output = ts.ProcessCommand("bitfield", "mykey", "set", "i4", "0", "1")
+	if !output.isArray(-1) {
+		t.Fatal("bitfield resp3 set step 3 fail")
+	}
+
+	output = ts.ProcessCommand("bitfield", "mykey", "get", "i4", "0")
+	if !output.isArray(1) {
+		t.Fatal("bitfield resp3 set step 4 fail")
+	}
+
+	// overflow option tests
+	output = ts.ProcessCommand("bitfield", "mykey", "overflow", "fail", "set", "i4", "0", "13")
+	if !output.isArray(nil) {
+		t.Fatal("bitfield resp3 set step 5 fail")
+	}
+}
+
 func testSetNeighbors(t *testing.T, bitwidth int) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts.Lane().Tracef("testing bitwidth %d", bitwidth)
 
@@ -645,7 +677,7 @@ func TestBitfieldSetNeighbors(t *testing.T) {
 }
 
 func testIncrbyNeighbors(t *testing.T, bitwidth, incrby int) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 	ts.Lane().SetLogLevel(lane.LogLevelInfo) // reduce logging; remove this to see all the data of the test
 	ts.Lane().Tracef("testing bitwidth %d incrby %d", bitwidth, incrby)
@@ -724,7 +756,7 @@ func TestBitfieldIncrbyNeighbors(t *testing.T) {
 }
 
 func TestBitfieldIncrby(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// basic bitfield incrby tests
@@ -837,7 +869,7 @@ func TestBitfieldIncrby(t *testing.T) {
 }
 
 func TestBitfieldRo(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// ensure writes aren't possible tests
@@ -895,7 +927,7 @@ func TestBitfieldRo(t *testing.T) {
 }
 
 func TestBitOp(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// bit inversion test
@@ -1045,7 +1077,7 @@ func TestBitOp(t *testing.T) {
 }
 
 func TestBitPos(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// no end arg tests
@@ -1176,7 +1208,7 @@ func TestBitPos(t *testing.T) {
 }
 
 func TestGetBit(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	// get bits of various positions test
@@ -1235,7 +1267,7 @@ func TestGetBit(t *testing.T) {
 }
 
 func TestSetBit(t *testing.T) {
-	ts := NewRedisTestClient()
+	ts := NewRedisTestClient(t)
 	defer ts.Close()
 
 	output := ts.ProcessCommand("setbit", "k", "0", "1")

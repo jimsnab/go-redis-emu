@@ -273,7 +273,7 @@ func nativeValueToResp(val any) (value respValue) {
 	case []string:
 		value.data = nativeStringArrayToResp(v)
 	case map[string]any:
-		value.data = nativeTableToResp(v)
+		value.data = nativeTableToResp2(v)
 	case map[string]string:
 		value.data = nativeStringTableToResp(v)
 	case map[any]any:
@@ -301,6 +301,30 @@ func nativeValueToResp(val any) (value respValue) {
 	return
 }
 
+func resp3To2(val3 respValue) (value respValue) {
+	switch v := val3.data.(type) {
+	case respSimpleString, respErrorString, respInt, respBulkString:
+		value.data = v
+	case respDouble, respBool, respBigNumber, respVerbatimString:
+		value.data = respSimpleString(fmt.Sprintf("%s", v))
+	case respBlobError:
+		value.data = respErrorString(v.String())
+	case respMap:
+		value.data = resp3MapToResp2(v)
+	case respArray:
+		value.data = resp3ArrayToResp2(v)
+	case respSet:
+		value.data = resp3SetToResp2(v)
+	case respAttributeMap:
+		value.data = resp3AttributeMapToResp2(v)
+	case respNull, nil:
+		value.data = nil
+	default:
+		panic(fmt.Sprintf("resp3to2 can't convert type %T", v))
+	}
+	return
+}
+
 func nativeArrayToResp(val []any) (a respArray) {
 	a = []respValue{}
 	for _, v := range val {
@@ -325,7 +349,7 @@ func nativeStringArrayToResp(val []string) (a respArray) {
 	return
 }
 
-func nativeTableToResp(val map[string]any) (a respArray) {
+func nativeTableToResp2(val map[string]any) (a respArray) {
 	names := make([]string, 0, len(val))
 	for name := range val {
 		names = append(names, name)
@@ -336,6 +360,62 @@ func nativeTableToResp(val map[string]any) (a respArray) {
 	for _, name := range names {
 		a = append(a, nativeValueToResp(name))
 		a = append(a, nativeValueToResp(val[name]))
+	}
+	return
+}
+
+func resp3MapToResp2(val respMap) (a respArray) {
+	m := make(map[string]respValue, len(val))
+	names := make([]string, 0, len(val))
+
+	for rv, rk := range val {
+		name := fmt.Sprintf("%s", rv.data)
+		names = append(names, name)
+		m[name] = resp3To2(rk)
+	}
+
+	sort.Strings(names)
+
+	a = make([]respValue, 0, 2*len(names))
+	for _, name := range names {
+		a = append(a, nativeValueToResp(name))
+		a = append(a, m[name])
+	}
+	return
+}
+
+func resp3AttributeMapToResp2(val respAttributeMap) (a respArray) {
+	m := make(map[string]respValue, len(val))
+	names := make([]string, 0, len(val))
+
+	for rv, rk := range val {
+		name := fmt.Sprintf("%s", rv.data)
+		names = append(names, name)
+		m[name] = resp3To2(rk)
+	}
+
+	sort.Strings(names)
+
+	a = make([]respValue, 0, 2*len(names))
+	for _, name := range names {
+		a = append(a, nativeValueToResp(name))
+		a = append(a, m[name])
+	}
+	return
+}
+
+func resp3ArrayToResp2(val respArray) (a respArray) {
+	a = make([]respValue, 0, len(val))
+	for _, e := range val {
+		a = append(a, resp3To2(e))
+	}
+	return
+}
+
+func resp3SetToResp2(val respSet) (a respArray) {
+	a = make([]respValue, 0, len(val))
+	for e := range val {
+		a = append(a, resp3To2(e))
 	}
 	return
 }
@@ -374,7 +454,7 @@ func nativeSetToResp(val map[any]struct{}) (s respSet) {
 func (rv *respValue) isValue(other any) bool {
 	switch o := other.(type) {
 	case nil:
-		return rv.data == nil
+		return rv.isNull()
 	case []any:
 		return rv.isArray(o...)
 	case bool:
@@ -399,6 +479,15 @@ func (rv *respValue) isValue(other any) bool {
 		return rv.isBigInt(o)
 	default:
 		panic(fmt.Sprintf("unsupported native value type %T in isValue", other))
+	}
+}
+
+func (rv *respValue) isResp3() bool {
+	switch rv.data.(type) {
+	case respAttributeMap, respBigNumber, respBlobError, respBool, respDouble, respEnd, respMap, respNull, respPush, respSet, respVerbatimString:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -567,6 +656,39 @@ func (rv *respValue) isArrayMap(other map[any]any) bool {
 	table := make(map[respValue]respValue, len(a)/2)
 	for i := 0; i < len(a); i += 2 {
 		table[a[i]] = a[i+1]
+	}
+
+	if len(table) != len(other) {
+		return false
+	}
+
+	for k, v := range other {
+		nk := nativeValueToResp(k)
+		tableVal, exists := table[nk]
+		if !exists {
+			return false
+		}
+		if !tableVal.isValue(v) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (rv *respValue) isArrayMapResp3(other map[any]any) bool {
+	a, valid := rv.toArray()
+	if !valid {
+		return false
+	}
+
+	table := make(map[respValue]respValue, len(a))
+	for _, pair := range a {
+		pa, valid := pair.toArray()
+		if !valid || len(pa) != 2 {
+			return false
+		}
+		table[pa[0]] = pa[1]
 	}
 
 	if len(table) != len(other) {

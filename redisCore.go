@@ -385,3 +385,23 @@ func fnFlushDb(ctx *cmdContext, args map[string]any) (output respValue, err erro
 	output.data = rstrOK
 	return
 }
+
+func fnHello(ctx *cmdContext, args map[string]any) (output respValue, err error) {
+	ver, hasVer := args["protover"].(int64)
+	if hasVer {
+		ctx.cs.respVersion = int(ver)
+	}
+
+	props := map[string]any{
+		"server":  "redis",
+		"version": "7.0.0",
+		"proto":   2,
+		"id":      ctx.cs.id,
+		"mode":    "standalone",
+		"role":    "master",
+		"modules": []any{},
+	}
+
+	output = nativeValueToResp(props)
+	return
+}

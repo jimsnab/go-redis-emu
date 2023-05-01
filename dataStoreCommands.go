@@ -1856,7 +1856,7 @@ func (dsc *dataStoreCommand) getHashTable(keyName string) (val respValue, ve val
 	sk, objExists := dsc.getKeyObjectUnlocked(keyName)
 	if !objExists {
 		ve = VALUE_DOESNT_EXIST
-		val = nativeValueToResp([]any{})
+		val = nativeValueToResp(map[string]any{})
 		return
 	}
 
@@ -2111,7 +2111,11 @@ func (dsc *dataStoreCommand) getHashTableRandField(keyName string, count *int, w
 	sk, objExists := dsc.getKeyObjectUnlocked(keyName)
 	if !objExists {
 		if count != nil {
-			output = nativeValueToResp([]any{})
+			if withValues {
+				output.data = respMap{}
+			} else {
+				output.data = respArray{}
+			}
 		}
 		return
 	}
@@ -2120,13 +2124,6 @@ func (dsc *dataStoreCommand) getHashTableRandField(keyName string, count *int, w
 	if m == nil {
 		output.data = wrongTypeError
 		return
-	}
-
-	var multiplier int
-	if withValues {
-		multiplier = 2
-	} else {
-		multiplier = 1
 	}
 
 	var items []*redisDictItem
@@ -2144,18 +2141,32 @@ func (dsc *dataStoreCommand) getHashTableRandField(keyName string, count *int, w
 		items = m.pickUniqueRandomItems(arraySize, 85)
 	}
 
-	a := make([]string, 0, arraySize*multiplier)
-	for _, item := range items {
-		a = append(a, item.key)
-		if withValues {
-			a = append(a, item.value.(string))
+	if withValues {
+		if count == nil {
+			panic("unexpected argument combination")
 		}
-	}
 
-	if count != nil {
-		output = nativeValueToResp(a)
+		// strange redis behavior - RESP2 returns flat array, RESP3 returns array of pairs (a pair is an array of 2)
+		pairs := make(respPairs, 0, arraySize)
+		for _, item := range items {
+			pair := respPair{
+				key: nativeValueToResp(item.key),
+				value: nativeValueToResp(item.value),
+			}
+			pairs = append(pairs, pair)
+		}
+		output.data = pairs
 	} else {
-		output.data = respBulkString(a[0])
+		a := make([]string, 0, arraySize)
+		for _, item := range items {
+			a = append(a, item.key)
+		}
+
+		if count != nil {
+			output = nativeValueToResp(a)
+		} else {
+			output.data = respBulkString(a[0])
+		}
 	}
 	return
 }

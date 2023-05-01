@@ -25,6 +25,15 @@ type (
 	respEnd          struct{}
 	respNull         struct{}
 
+	// respPair and respPairs are not actual RESP protocol types, but
+	// redis representes a 2-item tuple as a flat array in RESP2, and an
+	// array of arrays in RESP3.
+	respPair struct {
+		key   respValue
+		value respValue
+	}
+	respPairs []respPair
+
 	respBigNumber struct {
 		bn *big.Int
 	}
@@ -146,6 +155,23 @@ func (rm respMap) String() string {
 	return sb.String()
 }
 
+func (rp respPairs) String() string {
+	var sb strings.Builder
+
+	sb.WriteRune('{')
+	for _, pair := range rp {
+		if sb.Len() > 1 {
+			sb.WriteRune(',')
+		}
+		sb.WriteString(stringifyCollectionValue(pair.key))
+		sb.WriteRune(':')
+		sb.WriteString(stringifyCollectionValue(pair.value))
+	}
+	sb.WriteRune('}')
+
+	return sb.String()
+}
+
 func (ram respAttributeMap) String() string {
 	var sb strings.Builder
 	keys := make([]respValue, 0, len(ram))
@@ -203,7 +229,7 @@ func (rv respValue) String() string {
 	case nil, respNull:
 		return ""
 	case respSimpleString, respErrorString, respBulkString, respBlobError, respBool, respInt, respPush,
-		respDouble, respBigNumber, respArray, respMap, respSet, respAttributeMap, respVerbatimString:
+		respDouble, respBigNumber, respArray, respMap, respPairs, respSet, respAttributeMap, respVerbatimString:
 		return fmt.Sprintf("%v", v)
 	default:
 		panic(fmt.Sprintf("unsupported data member type %T in respValue", rv.data))
@@ -273,7 +299,7 @@ func nativeValueToResp(val any) (value respValue) {
 	case []string:
 		value.data = nativeStringArrayToResp(v)
 	case map[string]any:
-		value.data = nativeTableToResp2(v)
+		value.data = nativeTableToResp3(v)
 	case map[string]string:
 		value.data = nativeStringTableToResp(v)
 	case map[any]any:
@@ -311,6 +337,8 @@ func resp3To2(val3 respValue) (value respValue) {
 		value.data = respErrorString(v.String())
 	case respMap:
 		value.data = resp3MapToResp2(v)
+	case respPairs:
+		value.data = resp3PairsToResp2(v)
 	case respArray:
 		value.data = resp3ArrayToResp2(v)
 	case respSet:
@@ -364,6 +392,14 @@ func nativeTableToResp2(val map[string]any) (a respArray) {
 	return
 }
 
+func nativeTableToResp3(val map[string]any) (m respMap) {
+	m = make(respMap, len(val))
+	for k, v := range val {
+		m[nativeValueToResp(k)] = nativeValueToResp(v)
+	}
+	return
+}
+
 func resp3MapToResp2(val respMap) (a respArray) {
 	m := make(map[string]respValue, len(val))
 	names := make([]string, 0, len(val))
@@ -380,6 +416,16 @@ func resp3MapToResp2(val respMap) (a respArray) {
 	for _, name := range names {
 		a = append(a, nativeValueToResp(name))
 		a = append(a, m[name])
+	}
+	return
+}
+
+func resp3PairsToResp2(val respPairs) (a respArray) {
+	a = make(respArray, 0, len(val)*2)
+
+	for _, pair := range val {
+		a = append(a, pair.key)
+		a = append(a, pair.value)
 	}
 	return
 }
@@ -484,7 +530,7 @@ func (rv *respValue) isValue(other any) bool {
 
 func (rv *respValue) isResp3() bool {
 	switch rv.data.(type) {
-	case respAttributeMap, respBigNumber, respBlobError, respBool, respDouble, respEnd, respMap, respNull, respPush, respSet, respVerbatimString:
+	case respAttributeMap, respBigNumber, respBlobError, respBool, respDouble, respEnd, respMap, respPairs, respNull, respPush, respSet, respVerbatimString:
 		return true
 	default:
 		return false
@@ -676,32 +722,26 @@ func (rv *respValue) isArrayMap(other map[any]any) bool {
 	return true
 }
 
-func (rv *respValue) isArrayMapResp3(other map[any]any) bool {
-	a, valid := rv.toArray()
+func (rv *respValue) arePairsInTable(other map[string]string) bool {
+	// in RESP3, a pair table is a two dimensional array
+	pairs, valid := rv.toPairs()
 	if !valid {
 		return false
 	}
 
-	table := make(map[respValue]respValue, len(a))
-	for _, pair := range a {
-		pa, valid := pair.toArray()
-		if !valid || len(pa) != 2 {
+	for _, pair := range pairs {
+		// each of the items in rv must be found in other
+		k, valid := pair.key.toString()
+		if !valid {
 			return false
 		}
-		table[pa[0]] = pa[1]
-	}
-
-	if len(table) != len(other) {
-		return false
-	}
-
-	for k, v := range other {
-		nk := nativeValueToResp(k)
-		tableVal, exists := table[nk]
+		otherVal, exists := other[k]
 		if !exists {
 			return false
 		}
-		if !tableVal.isValue(v) {
+
+		v, valid := pair.value.toString()
+		if !valid || v != otherVal {
 			return false
 		}
 	}
@@ -1002,6 +1042,11 @@ func (rv *respValue) toArray() (a []respValue, valid bool) {
 	return
 }
 
+func (rv *respValue) toPairs() (a []respPair, valid bool) {
+	a, valid = rv.data.(respPairs)
+	return
+}
+
 func (rv *respValue) toMap() (m map[respValue]respValue, valid bool) {
 	switch v := rv.data.(type) {
 	case respMap:
@@ -1069,6 +1114,8 @@ func (rv *respValue) toNative() any {
 		return int64(v)
 	case respMap:
 		return respToNativeMap(v)
+	case respPairs:
+		return respToNativePairs(v)
 	case respNull:
 		return nil
 	case respPush:
@@ -1109,6 +1156,17 @@ func respToNativeMap(m respMap) map[any]any {
 
 	for k, v := range m {
 		out[k.toNative()] = v.toNative()
+	}
+
+	return out
+}
+
+func respToNativePairs(pairs respPairs) [][]any {
+	// resp3 output only
+	out := make([][]any, 0, len(pairs))
+
+	for _, pair := range pairs {
+		out = append(out, []any{pair.key.toNative(), pair.value.toNative()})
 	}
 
 	return out

@@ -32,7 +32,8 @@ func TestRedisCommands(t *testing.T) {
 		t.Fatal("failed to deserialize commands")
 	}
 
-	value2 := cmds.respSerialize()
+	value3 := cmds.respSerialize()
+	value2 := resp3To2(value3)
 
 	out := value2.serialize()
 
@@ -95,7 +96,8 @@ func TestRedisCommandsFixed(t *testing.T) {
 		t.Fatal("failed to deserialize commands")
 	}
 
-	value2 := cmds.respSerialize()
+	value3 := cmds.respSerialize()
+	value2 := resp3To2(value3)
 
 	out := value2.serialize()
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/jimsnab/go-lane"
@@ -18,6 +19,10 @@ func TestResp(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// git will mess with the line endings - so normalize them to redis standard
+	fixedContent := strings.ReplaceAll(string(content), "\r\n", "\n")
+	content = []byte(strings.ReplaceAll(fixedContent, "\n", "\r\n"))
+
 	rd := newRespDeserializerFromResource(l, content)
 	value, length, valid := rd.deserializeNext()
 	if !valid {
@@ -27,6 +32,7 @@ func TestResp(t *testing.T) {
 	fmt.Printf("parsed %d bytes\n", length)
 
 	out := value.serialize()
+
 	if len(content) != len(out) {
 		t.Fatal("serialization length does not match input")
 	}

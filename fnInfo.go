@@ -9,11 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-var ServerPort = 6379
-
 type redisStats struct {
 	run_id                     string
-	tcp_port                   int
 	update_in_seconds          int64
 	update_in_days             int64
 	connected_clients          int64
@@ -42,8 +39,7 @@ type redisStats struct {
 }
 
 var info redisStats = redisStats{
-	run_id:   strings.ReplaceAll(uuid.NewString(), "-", ""),
-	tcp_port: ServerPort,
+	run_id: strings.ReplaceAll(uuid.NewString(), "-", ""),
 }
 var infoMu sync.Mutex
 var started time.Time = time.Now()
@@ -76,7 +72,7 @@ func fnInfo(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 
 	data := map[string]any{}
 	data["run_id"] = info.run_id
-	data["tcp_port"] = info.tcp_port
+	data["tcp_port"] = ctx.cd.port
 	data["server_time_usec"] = uptime.Microseconds()
 	data["update_in_seconds"] = info.update_in_seconds
 	data["update_in_days"] = info.update_in_days

@@ -24,15 +24,12 @@ type (
 		canExit         chan struct{}
 		terminating     bool
 
-		enableTrace     bool
 		port            int
 		iface           string
 		persistBasePath string
 		quitOnKeypress  bool
 	}
 )
-
-var netInterface string
 
 func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, quitOnKeypress bool) (eng *RedisEmu, err error) {
 	eng = &RedisEmu{
@@ -46,17 +43,17 @@ func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, qu
 	return
 }
 
+func (eng *RedisEmu) Port() int {
+	return eng.port
+}
+
+func (eng *RedisEmu) NetInterface() string {
+	return eng.iface
+}
+
 func (eng *RedisEmu) Start() {
 	if eng.quitOnKeypress {
 		fmt.Printf("\n\nREDIS Emulator is now running\n\nPress any key to quit\n\n")
-	}
-
-	if eng.port != 0 {
-		ServerPort = eng.port
-	}
-
-	if eng.iface != "" {
-		netInterface = eng.iface
 	}
 
 	eng.dss = newDataStoreSet(eng.l, eng.persistBasePath)
@@ -172,12 +169,12 @@ func (eng *RedisEmu) startServer() {
 	// establish socket service
 	var err error
 
-	if netInterface == "" {
-		netInterface = fmt.Sprintf(":%d", ServerPort)
+	if eng.iface == "" {
+		eng.iface = fmt.Sprintf(":%d", eng.port)
 	} else {
-		netInterface = fmt.Sprintf("%s:%d", netInterface, ServerPort)
+		eng.iface = fmt.Sprintf("%s:%d", eng.iface, eng.port)
 	}
-	eng.server, err = net.Listen("tcp", netInterface)
+	eng.server, err = net.Listen("tcp", eng.iface)
 	if err != nil {
 		fmt.Println("Error listening: ", err.Error())
 		os.Exit(1)
@@ -207,7 +204,7 @@ func (eng *RedisEmu) startServer() {
 		eng.l.Fatal("failed to deserialize command info definitions")
 	}
 
-	dispatcher := newCmdDispatcher(cmds, info, eng.dss)
+	dispatcher := newCmdDispatcher(eng.port, eng.iface, cmds, info, eng.dss)
 
 	go func() {
 		// accept connections and process commands

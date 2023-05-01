@@ -25,6 +25,8 @@ type (
 	cmdHandler func(ctx *cmdContext, args map[string]any) (respValue, error)
 
 	cmdDispatcher struct {
+		port      int
+		iface     string
 		cmds      redisCommands
 		infoTable *redisInfoTable
 		dss       *dataStoreSet
@@ -245,8 +247,10 @@ func (ctx *cmdContext) infoUnlocked(cs *clientState) string {
 	return sb.String()
 }
 
-func newCmdDispatcher(cmds redisCommands, info *redisInfoTable, dss *dataStoreSet) *cmdDispatcher {
+func newCmdDispatcher(port int, netInterface string, cmds redisCommands, info *redisInfoTable, dss *dataStoreSet) *cmdDispatcher {
 	cd := &cmdDispatcher{
+		port:      port,
+		iface:     netInterface,
 		cmds:      cmds,
 		infoTable: info,
 		dss:       dss,

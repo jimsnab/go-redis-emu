@@ -37,6 +37,8 @@ func (rv *respValue) serializeValue(sb *strings.Builder) {
 		rv.serializeArray(sb, o)
 	case respMap:
 		rv.serializeMap(sb, o)
+	case respPairs:
+		rv.serializePairs(sb, o)
 	case respSet:
 		rv.serializeSet(sb, o)
 	case respAttributeMap:
@@ -112,6 +114,16 @@ func (rv *respValue) serializeMap(sb *strings.Builder, data respMap) {
 	for k, v := range data {
 		k.serializeValue(sb)
 		v.serializeValue(sb)
+	}
+}
+
+func (rv *respValue) serializePairs(sb *strings.Builder, data respPairs) {
+	// non-standard, serialize only (no deserialize)
+	sb.WriteString(fmt.Sprintf("*%d\r\n", len(data)))
+	for _, pair := range data {
+		sb.WriteString("*2\r\n")
+		pair.key.serializeValue(sb)
+		pair.value.serializeValue(sb)
 	}
 }
 

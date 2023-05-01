@@ -4,3 +4,4 @@ redis-commands-test-*.json
 *.exe
 keys.txt
 hello*
+test-info.txt

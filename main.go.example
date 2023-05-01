@@ -26,10 +26,11 @@ type (
 		saverTerminated chan struct{}
 		canExit         chan struct{}
 		terminating     bool
+		port            int
+		iface           string
 	}
 )
 
-var netInterface string
 
 func main() {
 	cl := cmdline.NewCommandLine()
@@ -70,12 +71,12 @@ func (eng *mainEngine) start() {
 
 	port := eng.args["port"].(int)
 	if port != 0 {
-		ServerPort = port
+		eng.port = port
 	}
 
 	iface := eng.args["interface"].(string)
 	if iface != "" {
-		netInterface = iface
+		eng.iface = iface
 	}
 
 	basePath := eng.args["file"].(string)
@@ -189,12 +190,12 @@ func (eng *mainEngine) startServer() {
 	// establish socket service
 	var err error
 
-	if netInterface == "" {
-		netInterface = fmt.Sprintf(":%d", ServerPort)
+	if eng.iface == "" {
+		eng.iface = fmt.Sprintf(":%d", eng.port)
 	} else {
-		netInterface = fmt.Sprintf("%s:%d", netInterface, ServerPort)
+		eng.iface = fmt.Sprintf("%s:%d", eng.iface, eng.port)
 	}
-	eng.server, err = net.Listen("tcp", netInterface)
+	eng.server, err = net.Listen("tcp", eng.iface)
 	if err != nil {
 		fmt.Println("Error listening: ", err.Error())
 		os.Exit(1)
@@ -224,7 +225,7 @@ func (eng *mainEngine) startServer() {
 		eng.l.Fatal("failed to deserialize command info definitions")
 	}
 
-	dispatcher := newCmdDispatcher(cmds, info, eng.dss)
+	dispatcher := newCmdDispatcher(eng.port, eng.iface, cmds, info, eng.dss)
 
 	go func() {
 		// accept connections and process commands

@@ -778,7 +778,7 @@ func TestHRandFieldResp3(t *testing.T) {
 	ts.ProcessCommand("hset", "multiple", "field2", "value2")
 	ts.ProcessCommand("hset", "multiple", "field3", "value3")
 	output := ts.ProcessCommand("hrandfield", "multiple", "3", "withvalues")
-	if !output.isArrayMapResp3(map[any]any{"field1": "value1", "field2": "value2", "field3": "value3"}) {
+	if !output.arePairsInTable(map[string]string{"field1": "value1", "field2": "value2", "field3": "value3"}) {
 		t.Fatal("hrandfield resp3 withvalues full table fail")
 	}
 }

@@ -342,10 +342,12 @@ func (cd *cmdDispatcher) prepare(cs *clientState, input respValue) (ctx *cmdCont
 		// special case for command getkeys and command getkeysandflags:
 		// the command has to be parsed without its arguments, because
 		// the redis command spec doesn't have a concept of "any"
-		str, _ := cmdArgs[0].toString()
-		subcmd := strings.ToLower(str)
-		if subcmd == "getkeys" || subcmd == "getkeysandflags" {
-			cmdArgs = args[1:2]
+		if len(cmdArgs) > 0 {
+			str, _ := cmdArgs[0].toString()
+			subcmd := strings.ToLower(str)
+			if subcmd == "getkeys" || subcmd == "getkeysandflags" {
+				cmdArgs = args[1:2]
+			}
 		}
 	}
 	argTable, keywords, cmdToken := parseCommand(cmdNameLower, cmd, opts, cmdArgs.toValues()...)

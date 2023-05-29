@@ -2150,7 +2150,7 @@ func (dsc *dataStoreCommand) getHashTableRandField(keyName string, count *int, w
 		pairs := make(respPairs, 0, arraySize)
 		for _, item := range items {
 			pair := respPair{
-				key: nativeValueToResp(item.key),
+				key:   nativeValueToResp(item.key),
 				value: nativeValueToResp(item.value),
 			}
 			pairs = append(pairs, pair)

@@ -134,7 +134,7 @@ func NewRedisTestClientResp3(t *testing.T) RedisTestClient {
 		// start with resp2 test client, then upgrade
 		client = NewRedisTestClientResp2(t)
 	}
-	
+
 	output := client.ProcessCommand("HELLO", "3")
 	if _, ok := output.data.(respMap); !ok {
 		t.Fatal("resp3 hello failed")

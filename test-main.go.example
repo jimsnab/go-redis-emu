@@ -1,0 +1,153 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/jimsnab/go-lane"
+	"github.com/jimsnab/go-redisemu"
+	"github.com/redis/go-redis/v9"
+)
+
+// server emulation
+var emu *redisemu.RedisEmu
+var testClient *redis.Client
+
+const kRedisTestPort = 7379
+
+// redis client - supports connecting to a "real redis" or to the emulated server
+var redisTestUrl string
+var redisSingleton *redis.Client
+var isRedisSingletonReal bool
+
+const kRedisNilError = "redis: nil" // defined by redis client for go, indicates "value does not exist"
+
+// common test data (not related to redis)
+var testLane lane.Lane
+
+func TestMain(m *testing.M) {
+	testSetup()
+	code := m.Run()
+	testShutdown()
+	os.Exit(code)
+}
+
+func testSetup() {
+	testLane = lane.NewTestingLane(context.Background())
+	testLane.AddTee(lane.NewLogLane(context.Background()))
+
+	emuLane := testLane.Derive()
+	emuLane.SetLogLevel(lane.LogLevelInfo) // if you want to see a lot of redis spew, set this to trace
+
+	var err error
+	emu, err = redisemu.NewEmulator(
+		emuLane,
+		kRedisTestPort, // test port
+		"",             // default interface
+		"",             // no persistence
+		false,          // no keypress termination
+	)
+	if err != nil {
+		fmt.Println("Error creating redis emulator: ", err.Error())
+		os.Exit(1)
+	}
+
+	emu.Start()
+
+	// connect a client to the emulator
+	redisTestUrl = fmt.Sprintf("redis://localhost:%d", kRedisTestPort)
+	opt, err := redis.ParseURL(redisTestUrl + "/1")
+	if err != nil {
+		fmt.Println("Error parsing redis emulator url: ", err.Error())
+		os.Exit(1)
+	}
+
+	testClient = redis.NewClient(opt)
+
+	// start the production redis client
+	err = initializeRedisClient(testLane, redisTestUrl+"/0")
+	if err != nil {
+		fmt.Println("Error connecting the production redis client: ", err.Error())
+		os.Exit(1)
+	}
+}
+
+func testShutdown() {
+	emu.RequestTermination()
+	emu.WaitForTermination()
+	emu = nil
+}
+
+func initializeRedisClient(l lane.Lane, redisUrl string) (err error) {
+	opt, err := redis.ParseURL(redisUrl)
+	if err != nil {
+		l.Error("newMerchantScanner:error parsing redis emulator url: ", err.Error())
+		err = errors.New("invalid redis url for merchant data")
+		return
+	}
+
+	redisSingleton = redis.NewClient(opt)
+	isRedisSingletonReal = !strings.HasSuffix(opt.Addr, fmt.Sprintf("%d", kRedisTestPort))
+	return
+}
+
+// clears redis testing emulator and loads the merchants from test data
+func testInitializeDb(t *testing.T) {
+    // protect against accidental deletion
+	if isRedisSingletonReal {
+		panic("don't flush the real redis!")
+	}
+
+	_, err := redisSingleton.FlushDB(testLane).Result()
+	if err != nil {
+		fmt.Println("Failed to flush the test redis db: ", err.Error())
+		os.Exit(1)
+	}
+
+	testLoadRedisDb(t)
+}
+
+func testLoadRedisDb(t *testing.T) {
+    // protect against accidental data overwrite
+    if isRedisSingletonReal {
+		panic("don't load test data into the real redis!")
+	}
+
+	// TODO: implement the population of desired test data into redis
+
+	// e.g., (pseudo code)
+	//
+	// data := osReadFile("./test_data.json")
+	// lines := strings.Split(string(data), "\n")
+	// for n, line := range lines {} {
+	//   redisSingleton.HSet(testLane, "my key", fmt.Sprintf("%d", n), line)
+	// }
+    //
+    // You should make the test fail upon an initialization error.
+
+	// Write the test like this:
+	//
+	// func TestExample(t *testing.T) {
+    //   // TestMain() already launched redis emulator and created a testLane for logging/cancelation
+	//   l := testLane.Derive()      // go ahead and derive a lane from it if desired
+	//   testInitializeDb(t)		 // populate the redis emulator
+	//
+	//   ... do the test the way you need to ...
+    //   ... use redisSingleton for client access to redis ...
+    //
+    //   ... example ...
+    //   value, err := redisSingleton.HGet(l, "my key", "1").Result()
+    //   if err != nil {
+    //       if err.Error() != kRedisNilError {
+    //          t.Fatal(err)
+    //       } else {
+    //          err = nil   // value is not set
+    //       }
+    //    }
+    //
+	// }
+}

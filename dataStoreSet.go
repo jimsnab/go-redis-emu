@@ -132,3 +132,16 @@ func (dss *dataStoreSet) getUser(userName string) (dsu *dataStoreUser, exists bo
 	dsu, exists = dss.users[userName]
 	return
 }
+
+func (dss *dataStoreSet) dbSize(index int) (size respInt, valid bool) {
+	dss.mu.Lock()
+	defer dss.mu.Unlock()
+
+	ds, exists := dss.dbs[index]
+	if exists {
+		size = respInt(ds.data.count)
+		valid = true
+	}
+
+	return
+}

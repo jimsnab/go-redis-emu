@@ -386,6 +386,12 @@ func fnFlushDb(ctx *cmdContext, args map[string]any) (output respValue, err erro
 	return
 }
 
+func fnDbSize(ctx *cmdContext, args map[string]any) (output respValue, err error) {
+	size, _ := ctx.cs.dss.dbSize(ctx.cs.selectedDb)
+	output.data = size
+	return
+}
+
 func fnHello(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	helloArgs, hasArgs := args["arguments"].(map[string]any)
 	if hasArgs {

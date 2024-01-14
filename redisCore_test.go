@@ -1634,3 +1634,18 @@ func TestRedisFlushDb(t *testing.T) {
 		t.Fatal("get db 0 val fail")
 	}
 }
+
+func TestRedisDbSize(t *testing.T) {
+	ts := NewRedisTestClient(t)
+	defer ts.Close()
+
+	output := ts.ProcessCommand("set", "cat", "meow")
+	if !output.isString("OK") {
+		t.Fatal("make a value fail")
+	}
+
+	output = ts.ProcessCommand("dbsize")
+	if !output.isInt64(1) {
+		t.Fatal("dbsize 0 fail")
+	}
+}

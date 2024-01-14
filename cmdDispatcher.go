@@ -73,6 +73,7 @@ var handlerTable = map[string]cmdHandler{
 	"command|info":            fnCommandInfo,
 	"command|list":            fnCommandList,
 	"copy":                    fnCopy,
+	"dbsize":                  fnDbSize,
 	"decr":                    fnDecr,
 	"decrby":                  fnDecrBy,
 	"del":                     fnDel,

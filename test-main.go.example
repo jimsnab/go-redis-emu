@@ -20,6 +20,7 @@ var testClient *redis.Client
 const kRedisTestPort = 7379
 
 // redis client - supports connecting to a "real redis" or to the emulated server
+// always redisClient in production code; can be redisClient or testClient in unit testing
 var redisTestUrl string
 var redisSingleton *redis.Client
 var isRedisSingletonReal bool

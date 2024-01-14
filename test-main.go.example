@@ -85,8 +85,8 @@ func testShutdown() {
 func initializeRedisClient(l lane.Lane, redisUrl string) (err error) {
 	opt, err := redis.ParseURL(redisUrl)
 	if err != nil {
-		l.Error("newMerchantScanner:error parsing redis emulator url: ", err.Error())
-		err = errors.New("invalid redis url for merchant data")
+		l.Error("error parsing redis emulator url: ", err.Error())
+		err = errors.New("invalid redis url")
 		return
 	}
 
@@ -95,7 +95,7 @@ func initializeRedisClient(l lane.Lane, redisUrl string) (err error) {
 	return
 }
 
-// clears redis testing emulator and loads the merchants from test data
+// clears redis testing emulator and loads the test data
 func testInitializeDb(t *testing.T) {
     // protect against accidental deletion
 	if isRedisSingletonReal {

@@ -286,16 +286,8 @@ func TestBitfieldGet(t *testing.T) {
 	// invalid arg test
 	output := ts.ProcessCommand("bitfield", "mykey")
 
-	_, isTestClient := ts.(*testClient)
-	if isTestClient {
-		if !output.isErrorType() {
-			t.Fatal("bitfield no operations fail")
-		}
-	} else {
-		// BUGBUG https://github.com/redis/redis/issues/11737
-		if !output.isArray() {
-			t.Fatal("bitfield no operations fail")
-		}
+	if !output.isArray() {
+		t.Fatal("bitfield no operations fail")
 	}
 
 	// prepare for several tests

@@ -74,7 +74,7 @@ func (cap *commandArgParser) parseInput(cmdToken string, cmd *redisCommand, inpu
 	return
 }
 
-func (cap *commandArgParser) parseOneInput(arg *redisArg, argIndex int, input ...respValue) (argKey string, argVal any, inputsUsed int, pms parseMultiStatus) {
+func (cap *commandArgParser) parseOneInput(arg *redisArg, argIndex int, started bool, input ...respValue) (argKey string, argVal any, inputsUsed int, pms parseMultiStatus) {
 	if len(input) == 0 {
 		return
 	}
@@ -85,7 +85,7 @@ func (cap *commandArgParser) parseOneInput(arg *redisArg, argIndex int, input ..
 		pms = PARSE_MULTI_VALUE
 	}
 
-	if arg.Token != "" {
+	if arg.Token != "" && (!started || !arg.Multiple) {
 		keyword, valid := ival.toString()
 		if !valid {
 			return
@@ -192,7 +192,7 @@ func (cap *commandArgParser) parseOneInput(arg *redisArg, argIndex int, input ..
 
 func (cap *commandArgParser) parseOneOf(args redisArgs, argIndex int, input ...respValue) (argKey string, argVal any, inputsUsed int, pms parseMultiStatus) {
 	for _, arg := range args {
-		subArgKey, subArgVal, subInputsUsed, subPms := cap.parseOneInput(arg, argIndex, input...)
+		subArgKey, subArgVal, subInputsUsed, subPms := cap.parseOneInput(arg, argIndex, false, input...)
 		if subInputsUsed > inputsUsed {
 			inputsUsed = subInputsUsed
 			argKey = subArgKey
@@ -215,6 +215,7 @@ func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input
 	skippedOptionals := redisArgs{}
 
 	testPos := 0
+	started := -1
 	foundMultiple := false
 	for {
 		if testPos >= len(args) {
@@ -222,7 +223,7 @@ func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input
 		}
 		arg := args[testPos]
 
-		subKey, subVal, subInputsUsed, subPms := cap.parseOneInput(arg, argIndex, input[argPos:]...)
+		subKey, subVal, subInputsUsed, subPms := cap.parseOneInput(arg, argIndex, testPos == started, input[argPos:]...)
 		if subInputsUsed == 0 {
 			if !arg.Optional {
 				if !foundMultiple {
@@ -254,6 +255,10 @@ func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input
 					a = []any{}
 				}
 				block[subKey] = append(a, subVal)
+
+				if arg.Multiple {
+					started = testPos
+				}
 			} else {
 				block[subKey] = subVal
 				testPos++
@@ -270,6 +275,7 @@ func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) 
 	skippedOptionals := redisArgs{}
 
 	foundMultiple := false
+	started := -1
 
 	for {
 		if apos >= len(args) {
@@ -279,7 +285,7 @@ func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) 
 
 		arg := args[apos]
 
-		argKey, argValue, length, pms := cap.parseOneInput(arg, ipos, input[ipos:]...)
+		argKey, argValue, length, pms := cap.parseOneInput(arg, ipos, started == apos, input[ipos:]...)
 		if length == 0 {
 			if !foundMultiple && !arg.Optional {
 				return
@@ -318,6 +324,10 @@ func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) 
 					valueArray = []any{}
 				}
 				values[argKey] = append(valueArray, argValue)
+
+				if arg.Multiple {
+					started = apos
+				}
 			}
 
 			if pms != PARSE_SINGLE_VALUE {

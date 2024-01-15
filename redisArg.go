@@ -9,6 +9,7 @@ const (
 	FLAG_ARG_SINCE
 	FLAG_ARG_DEPRECATED_SINCE
 	FLAG_ARG_REPLACED_BY
+	FLAG_ARG_DISPLAY_TEXT
 )
 
 type (
@@ -16,6 +17,7 @@ type (
 		fields          bitflags
 		Name            string    `json:"name,omitempty"`
 		TypeName        string    `json:"type,omitempty"`
+		DisplayText     string    `json:"display_text,omitempty"`
 		Token           string    `json:"token,omitempty"`
 		KeySpecIndex    *int      `json:"key_spec_index,omitempty"`
 		Since           string    `json:"since,omitempty"`
@@ -37,6 +39,10 @@ func (rarg *redisArg) respSerialize() respValue {
 
 	if flagHasOne(rarg.fields, FLAG_ARG_TYPE) {
 		argObj["type"] = rarg.TypeName
+	}
+
+	if flagHasOne(rarg.fields, FLAG_ARG_DISPLAY_TEXT) {
+		argObj["display_text"] = rarg.DisplayText
 	}
 
 	if rarg.KeySpecIndex != nil {
@@ -104,6 +110,7 @@ func (rarg *redisArg) respDeserialize(l lane.Lane, argSpec respValue) (valid boo
 	rarg.Since = rarg.getTableString(table, "since", FLAG_ARG_SINCE)
 	rarg.DeprecatedSince = rarg.getTableString(table, "deprecated_since", FLAG_ARG_DEPRECATED_SINCE)
 	rarg.ReplacedBy = rarg.getTableString(table, "replaced_by", FLAG_ARG_REPLACED_BY)
+	rarg.DisplayText = rarg.getTableString(table, "display_text", FLAG_ARG_DISPLAY_TEXT)
 
 	index, exists := getTableInt(table, "key_spec_index")
 	if exists {

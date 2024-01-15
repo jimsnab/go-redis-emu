@@ -1,6 +1,8 @@
 package redisemu
 
-import "github.com/jimsnab/go-lane"
+import (
+	"github.com/jimsnab/go-lane"
+)
 
 const (
 	FLAG_SUMMARY = 1 << iota

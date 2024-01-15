@@ -48,6 +48,8 @@ type (
 		respVersion     int
 		noEvict         bool
 		multiInProgress bool
+		libName         string
+		libVer          string
 	}
 )
 

@@ -43,4 +43,27 @@ func TestRedisClientConnect(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error getting dbsize: ", err)
 	}
+
+	_, err = testClient.FlushDB(l).Result()
+	if err != nil {
+		t.Fatal("Flush error: ", err)
+	}
+
+	redisUrl := fmt.Sprintf("redis://localhost:%d/0", kRedisTestPort)
+	opt, err = redis.ParseURL(redisUrl)
+	if err != nil {
+		t.Fatal("error parsing redis emulator url: ", err)
+		return
+	}
+
+	redisSingleton := redis.NewClient(opt)
+	_, err = redisSingleton.DBSize(l).Result()
+	if err != nil {
+		t.Fatal("Error getting dbsize: ", err)
+	}
+
+	_, err = redisSingleton.FlushDB(l).Result()
+	if err != nil {
+		t.Fatal("Flush error: ", err)
+	}
 }

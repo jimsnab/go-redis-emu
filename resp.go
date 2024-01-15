@@ -19,11 +19,11 @@ type (
 	respDouble       float64
 	respBool         bool
 	respBlobError    string
-	respMap          map[respValue]respValue
 	respSet          map[respValue]struct{}
 	respAttributeMap map[respValue]respValue
 	respEnd          struct{}
 	respNull         struct{}
+	respMap          struct{ orderedRespMap }
 
 	// respPair and respPairs are not actual RESP protocol types, but
 	// redis representes a 2-item tuple as a flat array in RESP2, and an
@@ -134,15 +134,15 @@ func (rs respSet) String() string {
 func (rm respMap) String() string {
 	var sb strings.Builder
 
-	keys := make([]respValue, 0, len(rm))
-	for k := range rm {
+	keys := make([]respValue, 0, len(rm.m))
+	for _, k := range rm.order {
 		keys = append(keys, k)
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
 
 	sb.WriteRune('{')
 	for _, k := range keys {
-		v := rm[k]
+		v := rm.mustGet(k)
 		if sb.Len() > 1 {
 			sb.WriteRune(',')
 		}
@@ -306,6 +306,8 @@ func nativeValueToResp(val any) (value respValue) {
 		value.data = nativeMapToResp(v)
 	case map[any]struct{}:
 		value.data = nativeSetToResp(v)
+	case *orderedMap:
+		value.data = orderedMapToResp(v)
 	case bool:
 		value.data = respBool(v)
 	case *big.Int:
@@ -393,29 +395,21 @@ func nativeTableToResp2(val map[string]any) (a respArray) {
 }
 
 func nativeTableToResp3(val map[string]any) (m respMap) {
-	m = make(respMap, len(val))
+	m = newRespMapSized(len(val))
 	for k, v := range val {
-		m[nativeValueToResp(k)] = nativeValueToResp(v)
+		m.set(nativeValueToResp(k), nativeValueToResp(v))
 	}
 	return
 }
 
 func resp3MapToResp2(val respMap) (a respArray) {
-	m := make(map[string]respValue, len(val))
-	names := make([]string, 0, len(val))
-
-	for rv, rk := range val {
-		name := fmt.Sprintf("%s", rv.data)
-		names = append(names, name)
-		m[name] = resp3To2(rk)
-	}
-
-	sort.Strings(names)
-
-	a = make([]respValue, 0, 2*len(names))
-	for _, name := range names {
+	a = make([]respValue, 0, 2*len(val.m))
+	for _, rk := range val.order {
+		name := fmt.Sprintf("%s", rk.data)
 		a = append(a, nativeValueToResp(name))
-		a = append(a, m[name])
+
+		rv := val.mustGet(rk)
+		a = append(a, nativeValueToResp(resp3To2(rv)))
 	}
 	return
 }
@@ -482,9 +476,18 @@ func nativeStringTableToResp(val map[string]string) (a respArray) {
 }
 
 func nativeMapToResp(val map[any]any) (m respMap) {
-	m = respMap{}
+	m = newRespMap()
 	for k, v := range val {
-		m[nativeValueToResp(k)] = nativeValueToResp(v)
+		m.set(nativeValueToResp(k), nativeValueToResp(v))
+	}
+	return
+}
+
+func orderedMapToResp(val *orderedMap) (m respMap) {
+	m = newRespMap()
+	for _, k := range val.order {
+		v := val.mustGet(k)
+		m.set(nativeValueToResp(k), nativeValueToResp(v))
 	}
 	return
 }
@@ -699,18 +702,18 @@ func (rv *respValue) isArrayMap(other map[any]any) bool {
 		return false
 	}
 
-	table := make(map[respValue]respValue, len(a)/2)
+	table := newRespMapSized(len(a) / 2)
 	for i := 0; i < len(a); i += 2 {
-		table[a[i]] = a[i+1]
+		table.set(a[i], a[i+1])
 	}
 
-	if len(table) != len(other) {
+	if len(table.m) != len(other) {
 		return false
 	}
 
 	for k, v := range other {
 		nk := nativeValueToResp(k)
-		tableVal, exists := table[nk]
+		tableVal, exists := table.get(nk)
 		if !exists {
 			return false
 		}
@@ -1044,13 +1047,31 @@ func (rv *respValue) toArray() (a []respValue, valid bool) {
 
 func (rv *respValue) toPairs() (a []respPair, valid bool) {
 	a, valid = rv.data.(respPairs)
+	if !valid {
+		groups, tvalid := rv.data.(respArray)
+		if tvalid {
+			pairs := make([]respPair, 0, len(groups))
+			for _, g := range groups {
+				group, tvalid := g.toArray()
+				if !tvalid || len(group) != 2 {
+					return
+				}
+				pairs = append(pairs, respPair{
+					key:   group[0],
+					value: group[1],
+				})
+			}
+			a = pairs
+			valid = true
+		}
+	}
 	return
 }
 
 func (rv *respValue) toMap() (m map[respValue]respValue, valid bool) {
 	switch v := rv.data.(type) {
 	case respMap:
-		m = v
+		m = v.m
 		valid = true
 	case respAttributeMap:
 		m = v
@@ -1067,6 +1088,7 @@ func (rv *respValue) toSet() (s map[respValue]struct{}, valid bool) {
 func (rv *respValue) arrayToSet() (s respSet, valid bool) {
 	a, valid := rv.data.(respArray)
 	if !valid {
+		s, valid = rv.data.(respSet)
 		return
 	}
 
@@ -1152,9 +1174,9 @@ func respToNativeSet(s respSet) map[any]struct{} {
 }
 
 func respToNativeMap(m respMap) map[any]any {
-	out := make(map[any]any, len(m))
+	out := make(map[any]any, len(m.m))
 
-	for k, v := range m {
+	for k, v := range m.m {
 		out[k.toNative()] = v.toNative()
 	}
 

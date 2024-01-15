@@ -1866,9 +1866,9 @@ func (dsc *dataStoreCommand) getHashTable(keyName string) (val respValue, ve val
 		return
 	}
 
-	rm := make(respMap, m.count)
+	rm := newRespMapSized(m.count)
 	for it := m.createIterator(); it.next(); {
-		rm[nativeValueToResp(it.key)] = nativeValueToResp(it.value.(string))
+		rm.set(nativeValueToResp(it.key), nativeValueToResp(it.value.(string)))
 	}
 	val.data = rm
 	return
@@ -2112,7 +2112,7 @@ func (dsc *dataStoreCommand) getHashTableRandField(keyName string, count *int, w
 	if !objExists {
 		if count != nil {
 			if withValues {
-				output.data = respMap{}
+				output.data = newRespMap()
 			} else {
 				output.data = respArray{}
 			}

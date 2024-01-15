@@ -113,7 +113,8 @@ func TestRespSerializeValues(t *testing.T) {
 		t.Error("array test fail")
 	}
 
-	m := respMap{first: second}
+	m := newRespMap()
+	m.set(first, second)
 	rv = respValue{data: m}
 	if string(rv.serialize()) != "%1\r\n+first\r\n+second\r\n" {
 		t.Error("map test fail")
@@ -342,13 +343,18 @@ func TestRespStringify(t *testing.T) {
 		t.Error("set stringify fail")
 	}
 
-	rv = respValue{data: respMap{first: second}}
+	rm := newRespMap()
+	rm.set(first, second)
+	rv = respValue{data: rm}
 	str = rv.String()
 	if str != `{1:"2"}` {
 		t.Error("map stringify fail")
 	}
 
-	rv = respValue{data: respMap{first: second, second: first}}
+	rm = newRespMap()
+	rm.set(first, second)
+	rm.set(second, first)
+	rv = respValue{data: rm}
 	str = rv.String()
 	if str != `{1:"2","2":1}` {
 		t.Error("map stringify fail")
@@ -685,7 +691,9 @@ func TestRespToNative(t *testing.T) {
 		t.Error("native int64 fail")
 	}
 
-	rv = respValue{data: respMap{first: second}}
+	rm := newRespMap()
+	rm.set(first, second)
+	rv = respValue{data: rm}
 	m := rv.toNative().(map[any]any)
 	em := map[any]any{"first": "second"}
 	if !reflect.DeepEqual(m, em) {

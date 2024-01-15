@@ -196,6 +196,7 @@ func (eng *RedisEmu) startServer() {
 	ri := newRespDeserializerFromResource(eng.l, cmdInfoSpec)
 	value, _, valid = ri.deserializeNext()
 	if !valid {
+		eng.l.Warnf("command info definition error at pos %d line %d", ri.pos, ri.lineNumber)
 		eng.l.Fatal("invalid command definition content")
 	}
 

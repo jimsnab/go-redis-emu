@@ -439,7 +439,7 @@ func TestRespMap(t *testing.T) {
 	if !valid {
 		t.Error("data is not a map")
 	}
-	if len(m) != 2 {
+	if len(m.m) != 2 {
 		t.Error("map length is not 2")
 	}
 	if !v.isValue(map[any]any{"first": 1, "second": 2}) {
@@ -614,7 +614,7 @@ func TestRespStreamedMap(t *testing.T) {
 	if !valid {
 		t.Error("data is not a map")
 	}
-	if len(m) != 2 {
+	if len(m.m) != 2 {
 		t.Error("data is not the right length")
 	}
 	if !v.isValue(map[any]any{"a": 1, "b": 2}) {

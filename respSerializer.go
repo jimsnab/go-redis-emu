@@ -110,9 +110,10 @@ func (rv *respValue) serializeArray(sb *strings.Builder, data respArray) {
 }
 
 func (rv *respValue) serializeMap(sb *strings.Builder, data respMap) {
-	sb.WriteString(fmt.Sprintf("%%%d\r\n", len(data)))
-	for k, v := range data {
+	sb.WriteString(fmt.Sprintf("%%%d\r\n", len(data.m)))
+	for _, k := range data.order {
 		k.serializeValue(sb)
+		v := data.mustGet(k)
 		v.serializeValue(sb)
 	}
 }

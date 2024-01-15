@@ -15,7 +15,7 @@ func fnHGet(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 
 func hsetCommon(ctx *cmdContext, args map[string]any, options bitflags) (output respValue, err error) {
 	keyName := args["key"].(string)
-	pairs, hasPairs := args["field_value"].([]any)
+	pairs, hasPairs := args["data"].([]any)
 
 	var fieldNames, values []string
 	if !hasPairs {

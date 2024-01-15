@@ -1050,13 +1050,17 @@ func TestSScanMatchCount(t *testing.T) {
 	if !ok || len(a) != 2 {
 		t.Fatal("sscan match and count return array fail")
 	}
+	items, ok := a[1].toArray()
+	if !ok {
+		t.Fatal("sscan items return array fail")
+	}
 	str, ok := a[0].toString()
-	if !ok || str == "0" {
+	if !ok || (str == "0" && len(items) < 2) || (str != "0" && len(items) >= 3) {
 		t.Fatal("sscan match and count cursor fail")
 	}
 
-	// it is possible for the scan to return an empty array
-	if !a[1].isArray() && !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) {
+	// 'count' is only a hint, and redis might return 0 to n, where n is the total number of matches
+	if !a[1].isArray() && !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) && !a[1].isArrayInSet(3, allMembers...) {
 		t.Fatal("sscan match and count fail")
 	}
 
@@ -1066,11 +1070,15 @@ func TestSScanMatchCount(t *testing.T) {
 		if !ok || len(a) != 2 {
 			t.Fatal("sscan #2 match and count return array fail")
 		}
+		items, ok = a[1].toArray()
+		if !ok {
+			t.Fatal("sscan items return array fail")
+		}
 		str, ok = a[0].toString()
-		if !ok || str == "0" {
+		if !ok || (str == "0" && len(items) < 2) || (str != "0" && len(items) >= 3) {
 			t.Fatal("sscan #2 match and count cursor fail")
 		}
-		if !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) {
+		if !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) && !a[1].isArrayInSet(3, allMembers...) {
 			t.Fatal("sscan #2 match and count fail")
 		}
 	}
@@ -1095,11 +1103,26 @@ func TestSScanMatchCount(t *testing.T) {
 	if !ok || len(a) != 2 {
 		t.Fatal("sscan count return array fail")
 	}
+	items, ok = a[1].toArray()
+	if !ok {
+		t.Fatal("sscan items return array fail")
+	}
 	str, ok = a[0].toString()
-	if !ok || str == "0" {
+	if !ok {
+		t.Fatal("sscan items return array fail")
+	}
+	if !ok || (str == "0" && len(items) < 2) || (str != "0" && len(items) >= 7) {
 		t.Fatal("sscan count cursor fail")
 	}
-	if !a[1].isArrayInSet(1, allMembers...) && !a[1].isArrayInSet(2, allMembers...) {
+	inSet := false
+	for i := 1; i <= 7; i++ {
+		inSet = a[1].isArrayInSet(i, allMembers...)
+		if inSet {
+			break
+		}
+	}
+
+	if !inSet {
 		t.Fatal("sscan count fail")
 	}
 }

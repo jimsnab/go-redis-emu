@@ -91,6 +91,7 @@ func NewRedisTestClientResp2(t *testing.T) RedisTestClient {
 	rd := newRespDeserializerFromResource(l, cmdSpec)
 	value, _, valid := rd.deserializeNext()
 	if !valid {
+		l.Warnf("failed to deserialize next value at %d, line number %d", rd.pos, rd.lineNumber)
 		l.Fatal("invalid cmdSpec definition content")
 	}
 
@@ -102,6 +103,7 @@ func NewRedisTestClientResp2(t *testing.T) RedisTestClient {
 	ri := newRespDeserializerFromResource(l, cmdInfoSpec)
 	value, _, valid = ri.deserializeNext()
 	if !valid {
+		l.Warnf("failed to deserialize next value at %d, line number %d", ri.pos, ri.lineNumber)
 		l.Fatal("invalid cmdInfoSpec definition content")
 	}
 

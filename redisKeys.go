@@ -223,7 +223,7 @@ func fnLcs(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	keyName2 := args["key2"].(string)
 	_, hasLength := args["len"]
 	_, hasIdx := args["idx"]
-	minMatchLen, _ := args["len"].(int64)
+	minMatchLen, _ := args["min-match-len"].(int64)
 	_, hasWithMatchLen := args["withmatchlen"]
 
 	vals, wrongType := ctx.dsc.getKeys(keyName1, keyName2)
@@ -242,7 +242,9 @@ func fnLcs(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	matchLen, matches, matchText := ls.longestSequence(int(minMatchLen), hasWithMatchLen)
 
 	if hasIdx {
-		result := map[any]any{"matches": matches, "len": matchLen}
+		result := newOrderedMap()
+		result.set("matches", matches)
+		result.set("len", matchLen)
 		output = nativeValueToResp(result)
 	} else if hasLength {
 		output = nativeValueToResp(matchLen)
@@ -312,7 +314,7 @@ func fnMget(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 }
 
 func fnMset(ctx *cmdContext, args map[string]any) (output respValue, err error) {
-	keyValuePairs, _ := args["key_value"].([]any)
+	keyValuePairs, _ := args["data"].([]any)
 
 	options := bitflags(0)
 	if ctx.cmdName == "msetnx" {

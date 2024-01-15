@@ -25,15 +25,15 @@ func fnBitCount(ctx *cmdContext, args map[string]any) (output respValue, err err
 	length := len(strBytes)
 	end := length - 1
 	bitMode := false
-	index, exists := args["index"].(map[string]any)
+	rangeArg, exists := args["range"].(map[string]any)
 	if exists {
-		if start64, exists := index["start"].(int64); exists {
+		if start64, exists := rangeArg["start"].(int64); exists {
 			start = int(start64)
 		}
-		if end64, exists := index["end"].(int64); exists {
+		if end64, exists := rangeArg["end"].(int64); exists {
 			end = int(end64)
 		}
-		_, bitMode = index["index_unit.bit"]
+		_, bitMode = rangeArg["unit.bit"]
 	}
 
 	if bitMode {
@@ -169,11 +169,11 @@ func organizeBitfieldOp(tableObj map[string]any, tableKey, valueKey string, opTy
 
 	argIndex := opTable["arg-index"].(int)
 
-	if _, exists := tableObj["wrap_sat_fail.wrap"]; exists {
+	if _, exists := tableObj["overflow-block.wrap"]; exists {
 		oflowChanges[argIndex] = OFLOW_WRAP
-	} else if _, exists := tableObj["wrap_sat_fail.sat"]; exists {
+	} else if _, exists := tableObj["overflow-block.sat"]; exists {
 		oflowChanges[argIndex] = OFLOW_SAT
-	} else if _, exists := tableObj["wrap_sat_fail.fail"]; exists {
+	} else if _, exists := tableObj["overflow-block.fail"]; exists {
 		oflowChanges[argIndex] = OFLOW_FAIL
 	}
 
@@ -203,7 +203,7 @@ func fnBitfield(ctx *cmdContext, args map[string]any) (output respValue, err err
 			opTable := w.(map[string]any)
 
 			// INCRBY
-			op, errText, valid := organizeBitfieldOp(opTable, "write_operation.encoding_offset_increment", "increment", BF_INCRBY, oflowChanges)
+			op, errText, valid := organizeBitfieldOp(opTable, "write-operation.incrby-block", "increment", BF_INCRBY, oflowChanges)
 			if !valid {
 				output.data = respErrorString(errText)
 				return
@@ -213,7 +213,7 @@ func fnBitfield(ctx *cmdContext, args map[string]any) (output respValue, err err
 				continue
 			} else {
 				// SET
-				op, errText, valid = organizeBitfieldOp(opTable, "write_operation.encoding_offset_value", "value", BF_SET, oflowChanges)
+				op, errText, valid = organizeBitfieldOp(opTable, "write-operation.set-block", "value", BF_SET, oflowChanges)
 				if !valid {
 					output.data = respErrorString(errText)
 					return
@@ -226,9 +226,9 @@ func fnBitfield(ctx *cmdContext, args map[string]any) (output respValue, err err
 		}
 	}
 
-	reads, valid := args["operation.encoding_offset"].([]any) // argument key defined by bitfield
+	reads, valid := args["operation.get-block"].([]any) // argument key defined by bitfield
 	if !valid {
-		reads, valid = args["encoding_offset"].([]any) // argument key defined by bitfield_ro
+		reads, valid = args["get-block"].([]any) // argument key defined by bitfield_ro
 	}
 	if valid {
 		for _, eo := range reads {
@@ -263,29 +263,32 @@ func fnBitfield(ctx *cmdContext, args map[string]any) (output respValue, err err
 }
 
 func fnBitOp(ctx *cmdContext, args map[string]any) (output respValue, err error) {
-	destKeyName := args["destkey"].(string)
-	srcKeys := args["key"].([]any)
-	op := args["operation"].(string)
+	keys := args["key"].([]any)
+	destKeyName := keys[0].(string)
+	srcKeys := keys[1:]
+	_, op_not := args["operation.not"]
+	_, op_and := args["operation.and"]
+	_, op_or := args["operation.or"]
+	_, op_xor := args["operation.xor"]
 
 	srcKeyNames := make([]string, 0, len(srcKeys))
 	for _, key := range srcKeys {
 		srcKeyNames = append(srcKeyNames, key.(string))
 	}
 
-	switch strings.ToLower(op) {
-	case "not":
+	if op_not {
 		if len(srcKeys) != 1 {
 			output.data = respErrorString("ERR BITOP NOT must be called with a single source key.")
 			return
 		}
 		output = ctx.dsc.invertBits(srcKeys[0].(string), destKeyName)
-	case "and":
+	} else if op_and {
 		output = ctx.dsc.changeBits(destKeyName, srcKeyNames, func(a, b byte) byte { return a & b })
-	case "or":
+	} else if op_or {
 		output = ctx.dsc.changeBits(destKeyName, srcKeyNames, func(a, b byte) byte { return a | b })
-	case "xor":
+	} else if op_xor {
 		output = ctx.dsc.changeBits(destKeyName, srcKeyNames, func(a, b byte) byte { return a ^ b })
-	default:
+	} else {
 		output.data = rstrSyntaxError
 		return
 	}
@@ -309,16 +312,16 @@ func fnBitPos(ctx *cmdContext, args map[string]any) (output respValue, err error
 	noEnd := true
 	start64 := int64(0)
 	end64 := int64(-1)
-	index, hasRange := args["index"].(map[string]any)
+	rangeArg, hasRange := args["range"].(map[string]any)
 	if hasRange {
 		bitToken := false
-		start64 = index["start"].(int64)
+		start64 = rangeArg["start"].(int64)
 
-		endIndex, exists := index["end_index"].(map[string]any)
+		endIndex, exists := rangeArg["end-unit-block"].(map[string]any)
 		if exists {
 			noEnd = false
 			end64 = endIndex["end"].(int64)
-			_, bitToken = endIndex["index_unit.bit"]
+			_, bitToken = endIndex["unit.bit"]
 		}
 
 		if bitToken {

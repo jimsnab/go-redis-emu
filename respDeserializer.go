@@ -435,7 +435,7 @@ func (rl *respDeserializer) getNextArray(count int) (value respArray, valid bool
 }
 
 func (rl *respDeserializer) getNextMap(pairs int) (value respMap, valid bool) {
-	m := make(respMap, pairs)
+	m := newRespMapSized(pairs)
 
 	for i := 0; i < pairs; i++ {
 		var k, v respValue
@@ -447,7 +447,7 @@ func (rl *respDeserializer) getNextMap(pairs int) (value respMap, valid bool) {
 			return
 		}
 
-		m[k] = v
+		m.set(k, v)
 	}
 
 	return m, true
@@ -563,7 +563,7 @@ func (rl *respDeserializer) getNextDynamicArray() (value respArray, valid bool) 
 }
 
 func (rl *respDeserializer) getNextDynamicMap() (value respMap, valid bool) {
-	m := respMap{}
+	m := newRespMap()
 
 	for {
 		var k, v respValue
@@ -578,7 +578,7 @@ func (rl *respDeserializer) getNextDynamicMap() (value respMap, valid bool) {
 			return
 		}
 
-		m[k] = v
+		m.set(k, v)
 	}
 }
 

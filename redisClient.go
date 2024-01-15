@@ -41,7 +41,7 @@ func fnPing(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 
 func fnClientUnblock(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	id := args["client-id"].(int64)
-	_, isError := args["timeout_error.error"]
+	_, isError := args["unblock-type.error"]
 
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
@@ -112,7 +112,7 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 
 		for _, val := range valArray {
 			switch arg {
-			case "filter.ip:port":
+			case "filter.old-format":
 				hasOldFormat = true
 				filter["addr"] = val.(string)
 				closed = -1
@@ -120,15 +120,15 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 				filter["addr"] = val.(string)
 			case "filter.new-format.client-id":
 				filter["id"] = fmt.Sprintf("%v", val)
-			case "filter.new-format.normal_master_slave_pubsub.normal":
+			case "filter.new-format.client-type.normal":
 				filter["type"] = "normal"
-			case "filter.new-format.normal_master_slave_pubsub.master":
+			case "filter.new-format.client-type.master":
 				filter["type"] = "master"
-			case "filter.new-format.normal_master_slave_pubsub.slave":
+			case "filter.new-format.client-type.slave":
 				filter["type"] = "slave"
-			case "filter.new-format.normal_master_slave_pubsub.pubsub":
+			case "filter.new-format.client-type.pubsub":
 				filter["type"] = "pubsub"
-			case "filter.new-format.normal_master_slave_pubsub.replica":
+			case "filter.new-format.client-type.replica":
 				filter["type"] = "replica"
 			case "filter.new-format.username":
 				userName := val.(string)
@@ -140,16 +140,10 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 				filter["user"] = userName
 			case "filter.new-format.laddr": // 'laddr' is a workaround name in our modified command docs template, instead of official name 'ip:port'
 				filter["laddr"] = val.(string)
-			case "filter.new-format.skipme": // 'skipme' is a workaround name in our modified command docs template, instead of official name 'yes/no'
-				s := val.(string)
-				if strings.EqualFold(s, "no") {
-					includeMe = true
-				} else if strings.EqualFold(s, "yes") {
-					includeMe = false
-				} else {
-					output.data = rstrSyntaxError
-					return
-				}
+			case "filter.new-format.skipme.no":
+				includeMe = true
+			case "filter.new-format.skipme.yes":
+				includeMe = false
 
 			default:
 				panic("unexpected arg")
@@ -210,18 +204,17 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 }
 
 func fnClientList(ctx *cmdContext, args map[string]any) (output respValue, err error) {
-	_, hasPubSub := args["normal_master_replica_pubsub.pubsub"]
-	_, hasReplica := args["normal_master_replica_pubsub.replica"]
-	_, hasMaster := args["normal_master_replica_pubsub.master"]
+	_, hasPubSub := args["client-type.pubsub"]
+	_, hasReplica := args["client-type.replica"]
+	_, hasMaster := args["client-type.master"]
 	if hasPubSub || hasReplica || hasMaster {
 		output.data = respBulkString("")
 		return
 	}
 
 	ids := map[int64]struct{}{}
-	argIds, exists := args["id"].(map[string]any)
+	clientIds, exists := args["client-id"].([]any)
 	if exists {
-		clientIds := argIds["client-id"].([]any)
 		for _, clientId := range clientIds {
 			ids[clientId.(int64)] = struct{}{}
 		}
@@ -258,6 +251,19 @@ func fnSelect(ctx *cmdContext, args map[string]any) (output respValue, err error
 	if !valid {
 		output.data = respErrorString("ERR DB index is out of range")
 		return
+	}
+	output.data = rstrOK
+	return
+}
+
+func fnClientSetInfo(ctx *cmdContext, args map[string]any) (output respValue, err error) {
+	libname, present := args["attr.libname"].(string)
+	if present {
+		ctx.cs.libName = libname
+	}
+	libver, present := args["attr.libver"].(string)
+	if present {
+		ctx.cs.libVer = libver
 	}
 	output.data = rstrOK
 	return

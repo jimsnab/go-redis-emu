@@ -63,6 +63,7 @@ var handlerTable = map[string]cmdHandler{
 	"client|list":             fnClientList,
 	"client|kill":             fnClientKill,
 	"client|no-evict":         fnClientNoEvict,
+	"client|setinfo":          fnClientSetInfo,
 	"client|setname":          fnClientSetName,
 	"client|unblock":          fnClientUnblock,
 	"command|count":           fnCommandCount,
@@ -273,12 +274,14 @@ func (cd *cmdDispatcher) addHandlerWorker(cmds redisCommands, cmdInfo *redisInfo
 	}
 	cmd, exists := cmds[cmdToken]
 	if !exists {
+		// command not found in the full command definition resource or file (e.g., redis7-fixed.txt)
 		panic(fmt.Sprintf("command %s is not defined; can't add handler", cmdToken))
 	}
 
 	_, exists = cmdInfo.table[cmdToken]
 	if !exists {
-		panic(fmt.Sprintf("command %s does not have info; can't add hanler", cmdToken))
+		// command not found in the info descriptor (e.g., redis7-info.txt)
+		panic(fmt.Sprintf("command %s does not have info; can't add handler", cmdToken))
 	}
 
 	if storedHandler, exists := cd.active[cmdToken]; exists && storedHandler != nil && handler != nil {

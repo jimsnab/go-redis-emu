@@ -1,7 +1,8 @@
 test-commands.txt
-test-commands-fixed.txt
+test-commands-*.txt
 redis-commands-test-*.json
 *.exe
 keys.txt
 hello*
 test-info.txt
+__debug_bin*

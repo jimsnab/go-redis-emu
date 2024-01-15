@@ -22,6 +22,7 @@ func TestRedisCommands(t *testing.T) {
 	rd := newRespDeserializerFromResource(l, content)
 	value, length, valid := rd.deserializeNext()
 	if !valid {
+		l.Warnf("failed to deserialize next value at %d, line number %d", rd.pos, rd.lineNumber)
 		t.Fatal("invalid test input content")
 	}
 
@@ -73,19 +74,29 @@ func TestRedisCommands(t *testing.T) {
 
 		t.Fatal("values aren't equal")
 	}
+
+	ri := newRespDeserializerFromResource(l, cmdInfoSpec)
+	value, _, valid = ri.deserializeNext()
+	if !valid {
+		l.Warnf("failed to deserialize next value at %d, line number %d", ri.pos, ri.lineNumber)
+		t.Fatal("invalid command definition content")
+	}
 }
 
 func TestRedisCommandsFixed(t *testing.T) {
 	l := lane.NewTestingLane(context.Background())
+	l.AddTee(lane.NewLogLane(l))
 
 	content, err := os.ReadFile("redis7-fixed.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
+	content = forceCrLf(content)
 
 	rd := newRespDeserializerFromResource(l, content)
 	value, length, valid := rd.deserializeNext()
 	if !valid {
+		l.Warnf("failed to deserialize next value at %d, line number %d", rd.pos, rd.lineNumber)
 		t.Fatal("invalid test input content")
 	}
 
@@ -100,6 +111,17 @@ func TestRedisCommandsFixed(t *testing.T) {
 	value2 := resp3To2(value3)
 
 	out := value2.serialize()
+
+	err = os.WriteFile("test-commands-read.txt", content[:length], 0644)
+	if err != nil {
+		t.Fatal("failed to write test-commands-read.txt")
+	}
+
+	dump, _ := json.MarshalIndent(cmds, "", "  ")
+	err = os.WriteFile("test-commands-dump.txt", dump, 0644)
+	if err != nil {
+		t.Fatal("failed to write test-commands-read.txt")
+	}
 
 	err = os.WriteFile("test-commands-fixed.txt", out, 0644)
 	if err != nil {

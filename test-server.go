@@ -1,6 +1,7 @@
 package redisemu
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -15,14 +16,12 @@ import (
 
 type (
 	RedisEmu struct {
-		mu              sync.Mutex
-		l               lane.Lane
-		dss             *dataStoreSet
-		server          net.Listener
-		exitSaver       chan struct{}
-		saverTerminated chan struct{}
-		canExit         chan struct{}
-		terminating     bool
+		mu       sync.Mutex
+		l        lane.Lane
+		dss      *dataStoreSet
+		server   net.Listener
+		cancelFn context.CancelFunc
+		wg       sync.WaitGroup
 
 		port            int
 		iface           string
@@ -32,8 +31,11 @@ type (
 )
 
 func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, quitOnKeypress bool) (eng *RedisEmu, err error) {
+	l2, cancelFn := l.DeriveWithCancel()
+
 	eng = &RedisEmu{
-		l:               l,
+		l:               l2,
+		cancelFn:        cancelFn,
 		port:            port,
 		iface:           iface,
 		persistBasePath: persistBasePath,
@@ -59,7 +61,6 @@ func (eng *RedisEmu) Start() {
 	eng.dss = newDataStoreSet(eng.l, eng.persistBasePath)
 
 	// launch termination monitiors
-	eng.canExit = make(chan struct{})
 	eng.killSignalMonitor()
 
 	if eng.quitOnKeypress {
@@ -74,40 +75,19 @@ func (eng *RedisEmu) Start() {
 }
 
 func (eng *RedisEmu) RequestTermination() {
-	// ensure only one termination
 	eng.mu.Lock()
-	isTerminating := eng.terminating
-	eng.terminating = true
-	eng.mu.Unlock()
+	defer eng.mu.Unlock()
 
-	if isTerminating {
-		return
-	}
-
-	go func() { eng.onTerminate() }()
-}
-
-func (eng *RedisEmu) onTerminate() {
 	if eng.server != nil {
-		// close the server and wait for all active connections to finish
-		eng.l.Tracef("closing server")
+		// the only way to stop the blocking listen is to close its connection
 		eng.server.Close()
-
-		eng.l.Infof("waiting for any open request connections to complete")
-		requestAllCxnClose()
-		waitForAllCxnClose()
-		eng.l.Infof("termination of %s completed", eng.server.Addr().String())
+		eng.server = nil
 	}
 
-	// stop the periodic saver (if running)
-	if eng.exitSaver != nil {
-		eng.l.Tracef("closing database saver")
-		eng.exitSaver <- struct{}{}
-		<-eng.saverTerminated
-		eng.l.Tracef("database saver closed")
+	if eng.cancelFn != nil {
+		eng.cancelFn()
+		eng.cancelFn = nil
 	}
-
-	eng.canExit <- struct{}{}
 }
 
 func (eng *RedisEmu) killSignalMonitor() {
@@ -115,10 +95,20 @@ func (eng *RedisEmu) killSignalMonitor() {
 	sigs := make(chan os.Signal, 10)
 	signal.Notify(sigs, os.Interrupt)
 
+	eng.wg.Add(1)
 	go func() {
-		sig := <-sigs
-		eng.l.Infof("termination %s signaled for %s", sig, eng.server.Addr().String())
-		eng.RequestTermination()
+		defer eng.wg.Done()
+
+		select {
+		case sig := <-sigs:
+			eng.l.Info("kill signal received: %s", sig.String())
+			eng.RequestTermination()
+			return
+
+		case <-eng.l.Done():
+			eng.l.Info("kill monitor canceled")
+			return
+		}
 	}()
 }
 
@@ -126,7 +116,10 @@ func (eng *RedisEmu) exitKeyMonitor() {
 	// Start a go routine to detect a keypress. Upon termination
 	// triggered another way, this goroutine will leak. Go does
 	// not give a reasonable way to cancel a blocking I/O call.
+	eng.wg.Add(1)
 	go func() {
+		defer eng.wg.Done()
+
 		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 		if err != nil {
 			fmt.Println(err)
@@ -137,7 +130,10 @@ func (eng *RedisEmu) exitKeyMonitor() {
 		b := make([]byte, 1)
 		_, err = os.Stdin.Read(b)
 		if err == nil {
+			eng.l.Info("exit key pressed")
 			eng.RequestTermination()
+		} else {
+			eng.l.Info("exit key monitor canceled")
 		}
 	}()
 }
@@ -145,17 +141,17 @@ func (eng *RedisEmu) exitKeyMonitor() {
 func (eng *RedisEmu) periodicSave() {
 	// make a periodic save that will also ensure save upon termination
 	if eng.dss.basePath != "" {
-		eng.exitSaver = make(chan struct{})
-		eng.saverTerminated = make(chan struct{})
+		eng.wg.Add(1)
 		go func() {
+			defer eng.wg.Done()
+
 			timer := time.NewTicker(time.Second)
 			for {
 				select {
-				case <-eng.exitSaver:
+				case <-eng.l.Done():
 					eng.l.Trace("saver loop is exiting")
 					timer.Stop()
 					eng.dss.save(eng.l)
-					eng.saverTerminated <- struct{}{}
 					return
 				case <-timer.C:
 					eng.dss.save(eng.l)
@@ -174,12 +170,14 @@ func (eng *RedisEmu) startServer() {
 	} else {
 		eng.iface = fmt.Sprintf("%s:%d", eng.iface, eng.port)
 	}
-	eng.server, err = net.Listen("tcp", eng.iface)
+	server, err := net.Listen("tcp", eng.iface)
 	if err != nil {
 		fmt.Println("Error listening: ", err.Error())
 		os.Exit(1)
 	}
-	eng.l.Infof("listening on %s", eng.server.Addr().String())
+
+	eng.server = server
+	eng.l.Infof("listening on %s", server.Addr().String())
 
 	// make a command dispatcher
 	rd := newRespDeserializerFromResource(eng.l, cmdSpec)
@@ -207,10 +205,13 @@ func (eng *RedisEmu) startServer() {
 
 	dispatcher := newCmdDispatcher(eng.port, eng.iface, cmds, info, eng.dss)
 
+	eng.wg.Add(1)
 	go func() {
+		defer eng.wg.Done()
+
 		// accept connections and process commands
 		for {
-			connection, err := eng.server.Accept()
+			connection, err := server.Accept()
 			if err != nil {
 				if !errors.Is(err, net.ErrClosed) {
 					eng.l.Errorf("accept error: %s", err)
@@ -225,6 +226,6 @@ func (eng *RedisEmu) startServer() {
 
 func (eng *RedisEmu) WaitForTermination() {
 	// wait for server to quiesque
-	<-eng.canExit
+	eng.wg.Wait()
 	eng.l.Info("finished serving requests")
 }

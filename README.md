@@ -57,8 +57,8 @@ test server.
 
 # Testing
 
-See `main.go.example` for the method to launch the emulated server. That code
-implements a stand-alone redis server executable.
+See [go-redisemu-server](https://github.com/jimsnab/go-redisemu-server) for
+a console executable that implements a stand-alone emulator server.
 
 See `test-main.go.example` for sample code that stands up a redis server emulator
 as part of `TestMain()`, and maintains a redis client singleton that can

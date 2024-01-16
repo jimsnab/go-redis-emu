@@ -13,11 +13,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// server emulation
-var emu *redisemu.RedisEmu
-var testClient *redis.Client
+// Set useLocalRedis to true to direct redis traffic to a real redis server you have listening on localhost:6379
+// N.B. when using the emulator, you can connect a redis cli to it, to view data of your running test.
+// (A long sleep in your test may be helpful to allow you to connect the cli and view data.)
 
-const kRedisTestPort = 7379
+var useLocalRedis = false
+
+// server emulation
+var redisServer *redisemu.RedisEmu
+var testClient *redis.Client
 
 // redis client - supports connecting to a "real redis" or to the emulated server
 // always redisClient in production code; can be redisClient or testClient in unit testing
@@ -25,10 +29,10 @@ var redisTestUrl string
 var redisSingleton *redis.Client
 var isRedisSingletonReal bool
 
-const kRedisNilError = "redis: nil" // defined by redis client for go, indicates "value does not exist"
+const kRedisTestPort = 7379
 
 // common test data (not related to redis)
-var testLane lane.Lane
+var testLane lane.TestingLane
 
 func TestMain(m *testing.M) {
 	testSetup()
@@ -41,29 +45,34 @@ func testSetup() {
 	testLane = lane.NewTestingLane(context.Background())
 	testLane.AddTee(lane.NewLogLane(context.Background()))
 
-	emuLane := testLane.Derive()
-	emuLane.SetLogLevel(lane.LogLevelInfo) // if you want to see a lot of redis spew, set this to trace
+	serverLane := testLane.Derive()
+	serverLane.SetLogLevel(lane.LogLevelInfo)
 
 	var err error
-	emu, err = redisemu.NewEmulator(
-		emuLane,
-		kRedisTestPort, // test port
-		"",             // default interface
-		"",             // no persistence
-		false,          // no keypress termination
+	redisServer, err  = redisemu.NewEmulator(
+		serverLane,
+		kRedisTestPort,
+		"", // using localhost
+		"", // not saving redis to disk
+		nil, // no external termination signal (such as keypress)
 	)
 	if err != nil {
-		fmt.Println("Error creating redis emulator: ", err.Error())
-		os.Exit(1)
+		fmt.Println("Error starting redis emulator service: ", err)
 	}
+	redisServer.Start()
 
-	emu.Start()
+	fmt.Printf("redis emulator running at localhost:%d", kRedisTestPort)
 
-	// connect a client to the emulator
-	redisTestUrl = fmt.Sprintf("redis://localhost:%d", kRedisTestPort)
+	if useLocalRedis {
+		// connect a client to a localhost redis
+		redisTestUrl = "redis://localhost:6379"
+	} else {
+		// connect a client to the emulator
+		redisTestUrl = fmt.Sprintf("redis://localhost:%d", kRedisTestPort)
+	}
 	opt, err := redis.ParseURL(redisTestUrl + "/1")
 	if err != nil {
-		fmt.Println("Error parsing redis emulator url: ", err.Error())
+		fmt.Println("Error parsing redis emulator url: ", err)
 		os.Exit(1)
 	}
 
@@ -72,32 +81,32 @@ func testSetup() {
 	// start the production redis client
 	err = initializeRedisClient(testLane, redisTestUrl+"/0")
 	if err != nil {
-		fmt.Println("Error connecting the production redis client: ", err.Error())
+		fmt.Println("Error connecting the production redis client: ", err)
 		os.Exit(1)
 	}
 }
 
 func testShutdown() {
-	emu.RequestTermination()
-	emu.WaitForTermination()
-	emu = nil
+	redisServer.RequestTermination()
+	redisServer.WaitForTermination()
+	redisServer = nil
 }
 
 func initializeRedisClient(l lane.Lane, redisUrl string) (err error) {
 	opt, err := redis.ParseURL(redisUrl)
 	if err != nil {
-		l.Error("error parsing redis emulator url: ", err.Error())
+		l.Error("error parsing redis emulator url: ", err)
 		err = errors.New("invalid redis url")
 		return
 	}
 
 	redisSingleton = redis.NewClient(opt)
-	isRedisSingletonReal = !strings.HasSuffix(opt.Addr, fmt.Sprintf("%d", kRedisTestPort))
+	isRedisSingletonReal = redisServer == nil || !strings.HasSuffix(opt.Addr, fmt.Sprintf("%d", kRedisTestPort))
 	return
 }
 
-// clears redis testing emulator and loads the test data
-func testInitializeDb(t *testing.T) {
+// clears redis testing emulator to be ready for new test data
+func testInitializeRedisDb(t *testing.T) {
     // protect against accidental deletion
 	if isRedisSingletonReal {
 		panic("don't flush the real redis!")
@@ -105,50 +114,7 @@ func testInitializeDb(t *testing.T) {
 
 	_, err := redisSingleton.FlushDB(testLane).Result()
 	if err != nil {
-		fmt.Println("Failed to flush the test redis db: ", err.Error())
+		fmt.Println("Failed to flush the test redis db: ", err)
 		os.Exit(1)
 	}
-
-	testLoadRedisDb(t)
-}
-
-func testLoadRedisDb(t *testing.T) {
-    // protect against accidental data overwrite
-    if isRedisSingletonReal {
-		panic("don't load test data into the real redis!")
-	}
-
-	// TODO: implement the population of desired test data into redis
-
-	// e.g., (pseudo code)
-	//
-	// data := osReadFile("./test_data.json")
-	// lines := strings.Split(string(data), "\n")
-	// for n, line := range lines {} {
-	//   redisSingleton.HSet(testLane, "my key", fmt.Sprintf("%d", n), line)
-	// }
-    //
-    // You should make the test fail upon an initialization error.
-
-	// Write the test like this:
-	//
-	// func TestExample(t *testing.T) {
-    //   // TestMain() already launched redis emulator and created a testLane for logging/cancelation
-	//   l := testLane.Derive()      // go ahead and derive a lane from it if desired
-	//   testInitializeDb(t)		 // populate the redis emulator
-	//
-	//   ... do the test the way you need to ...
-    //   ... use redisSingleton for client access to redis ...
-    //
-    //   ... example ...
-    //   value, err := redisSingleton.HGet(l, "my key", "1").Result()
-    //   if err != nil {
-    //       if err.Error() != kRedisNilError {
-    //          t.Fatal(err)
-    //       } else {
-    //          err = nil   // value is not set
-    //       }
-    //    }
-    //
-	// }
 }

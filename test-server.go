@@ -55,7 +55,7 @@ func (eng *RedisEmu) NetInterface() string {
 
 func (eng *RedisEmu) Start() {
 	if eng.quitSignal != nil {
-		fmt.Printf("\n\nREDIS Emulator is now running\n\nPress any key to quit\n\n")
+		fmt.Printf("\r\n\r\nREDIS Emulator is now running\r\n\r\nPress any key to quit\r\n\r\n")
 	}
 
 	eng.dss = newDataStoreSet(eng.l, eng.persistBasePath)

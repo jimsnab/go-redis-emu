@@ -61,7 +61,7 @@ func testSetup() {
 	}
 	redisServer.Start()
 
-	fmt.Printf("redis emulator running at localhost:%d", kRedisTestPort)
+	fmt.Printf("redis emulator running at localhost:%d\n", kRedisTestPort)
 
 	if useLocalRedis {
 		// connect a client to a localhost redis

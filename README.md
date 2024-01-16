@@ -34,7 +34,7 @@ Create an instance of the emulator as shown in the following fragment:
 		kRedisTestPort, // such as 7379
 		"",
 		"",
-		false,
+		nil, // optional chan struct{} to signal termination (such as termination via keypress)
 	)
 	if err != nil {
 		panic(err)
@@ -58,7 +58,7 @@ termination in another. For example, a signal handler task might request
 termination, while the main task waits for termination.
 
 The emulator includes a "press a key to terminate" capability, for which
-a keypress will invoke `RequestTermination()`. This is useful in a stand-alone
+a signal will invoke `RequestTermination()`. This is useful in a stand-alone
 test server.
 
 # Testing

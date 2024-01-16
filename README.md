@@ -45,7 +45,7 @@ Create an instance of the emulator as shown in the following fragment:
 Terminate the emulator with:
 
 ```go
-    redisServer.RequestTermination()    // immediately reject new requests
+	redisServer.RequestTermination()    // immediately reject new requests
 	redisServer.WaitForTermination()    // wait for all in-flight requests to complete
 ```
 

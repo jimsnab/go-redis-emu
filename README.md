@@ -20,13 +20,15 @@ or real redis.
 Create an instance of the emulator as shown in the following fragment:
 
 ```go
-    // The emulator has a lot of logging which can be useful,
-    // and can be annoyingly noisy. Use a separate lane if you
-    // wish to isolate the logging and potentially filter or
-    // disable it.
-    serverLane := lane.NewLogLane(context.Background())
+	// The emulator has a lot of logging which can be useful,
+	// and can be annoyingly noisy. Use a separate lane if you
+	// wish to isolate the logging and potentially filter or
+	// disable it.
+	serverLane := lane.NewLogLane(context.Background())
 
-    // The server immediately starts listening.
+	// The server initializes, including loading from disk if
+	// a persist path is specified, but does not start listening
+	// until Start() is called.
 	redisServer, err := redisemu.NewEmulator(
 		serverLane,     
 		kRedisTestPort, // such as 7379
@@ -34,6 +36,10 @@ Create an instance of the emulator as shown in the following fragment:
 		"",
 		false,
 	)
+	if err != nil {
+		panic(err)
+	}
+	redisServer.Start()
 ```
 
 Terminate the emulator with:

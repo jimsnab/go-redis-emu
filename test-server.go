@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/jimsnab/go-lane"
@@ -93,11 +94,13 @@ func (eng *RedisEmu) RequestTermination() {
 func (eng *RedisEmu) killSignalMonitor() {
 	// register a graceful termination handler
 	sigs := make(chan os.Signal, 10)
-	signal.Notify(sigs, os.Interrupt)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 
 	eng.wg.Add(1)
 	go func() {
 		defer eng.wg.Done()
+
+		eng.l.Trace("kill signal monitor running")
 
 		select {
 		case sig := <-sigs:
@@ -119,6 +122,8 @@ func (eng *RedisEmu) exitKeyMonitor() {
 	eng.wg.Add(1)
 	go func() {
 		defer eng.wg.Done()
+
+		eng.l.Trace("exit key monitor running")
 
 		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 		if err != nil {

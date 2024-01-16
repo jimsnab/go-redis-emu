@@ -32,8 +32,8 @@ Create an instance of the emulator as shown in the following fragment:
 	redisServer, err := redisemu.NewEmulator(
 		serverLane,     
 		kRedisTestPort, // such as 7379
-		"",
-		"",
+		"",  // use default interface
+		"",  // don't persist to disk
 		nil, // optional chan struct{} to signal termination (such as termination via keypress)
 	)
 	if err != nil {

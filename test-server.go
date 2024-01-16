@@ -103,12 +103,12 @@ func (eng *RedisEmu) killSignalMonitor() {
 
 		select {
 		case sig := <-sigs:
-			eng.l.Infof("kill signal received: %s", sig.String())
+			eng.l.Debugf("kill signal received: %s", sig.String())
 			eng.RequestTermination()
 			return
 
 		case <-eng.l.Done():
-			eng.l.Info("kill monitor canceled")
+			eng.l.Debug("kill monitor canceled")
 			return
 		}
 	}()
@@ -125,10 +125,10 @@ func (eng *RedisEmu) exitKeyMonitor() {
 		eng.l.Trace("exit key monitor running")
 		select {
 		case <-eng.l.Done():
-			eng.l.Trace("exit key monitor canceled")
+			eng.l.Debug("exit key monitor canceled")
 			break
 		case <-eng.quitSignal:
-			eng.l.Trace("exit key monitor signaled")
+			eng.l.Debug("exit key monitor signaled")
 			eng.RequestTermination()
 			break
 		}
@@ -146,7 +146,7 @@ func (eng *RedisEmu) periodicSave() {
 			for {
 				select {
 				case <-eng.l.Done():
-					eng.l.Trace("saver loop is exiting")
+					eng.l.Debug("saver loop canceled")
 					timer.Stop()
 					eng.dss.save(eng.l)
 					return

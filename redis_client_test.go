@@ -19,7 +19,7 @@ func TestRedisClientConnect(t *testing.T) {
 		kRedisTestPort, // test port
 		"",             // default interface
 		"",             // no persistence
-		false,          // no keypress termination
+		nil,            // no keypress termination
 	)
 	if err != nil {
 		t.Fatal("Error creating redis emulator: ", err)

@@ -13,7 +13,7 @@ const testServerTestEnabled = false
 func TestServer(t *testing.T) {
 	if testServerTestEnabled {
 		l := lane.NewTestingLane(context.Background())
-		eng, err := NewEmulator(l, 7500, "", "", true)
+		eng, err := NewEmulator(l, 7500, "", "", make(chan struct{}))
 		if err != nil {
 			t.Fatal(err)
 		}

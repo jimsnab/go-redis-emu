@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/jimsnab/go-lane"
-	"golang.org/x/term"
 )
 
 type (
@@ -27,11 +26,11 @@ type (
 		port            int
 		iface           string
 		persistBasePath string
-		quitOnKeypress  bool
+		quitSignal chan struct{}
 	}
 )
 
-func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, quitOnKeypress bool) (eng *RedisEmu, err error) {
+func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, quitSignal chan struct{}) (eng *RedisEmu, err error) {
 	l2, cancelFn := l.DeriveWithCancel()
 
 	eng = &RedisEmu{
@@ -40,7 +39,7 @@ func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, qu
 		port:            port,
 		iface:           iface,
 		persistBasePath: persistBasePath,
-		quitOnKeypress:  quitOnKeypress,
+		quitSignal:  quitSignal,
 	}
 
 	return
@@ -55,7 +54,7 @@ func (eng *RedisEmu) NetInterface() string {
 }
 
 func (eng *RedisEmu) Start() {
-	if eng.quitOnKeypress {
+	if eng.quitSignal != nil {
 		fmt.Printf("\n\nREDIS Emulator is now running\n\nPress any key to quit\n\n")
 	}
 
@@ -64,7 +63,7 @@ func (eng *RedisEmu) Start() {
 	// launch termination monitiors
 	eng.killSignalMonitor()
 
-	if eng.quitOnKeypress {
+	if eng.quitSignal != nil {
 		eng.exitKeyMonitor()
 	}
 
@@ -104,7 +103,7 @@ func (eng *RedisEmu) killSignalMonitor() {
 
 		select {
 		case sig := <-sigs:
-			eng.l.Info("kill signal received: %s", sig.String())
+			eng.l.Infof("kill signal received: %s", sig.String())
 			eng.RequestTermination()
 			return
 
@@ -124,21 +123,14 @@ func (eng *RedisEmu) exitKeyMonitor() {
 		defer eng.wg.Done()
 
 		eng.l.Trace("exit key monitor running")
-
-		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		defer term.Restore(int(os.Stdin.Fd()), oldState)
-
-		b := make([]byte, 1)
-		_, err = os.Stdin.Read(b)
-		if err == nil {
-			eng.l.Info("exit key pressed")
+		select {
+		case <-eng.l.Done():
+			eng.l.Trace("exit key monitor canceled")
+			break
+		case <-eng.quitSignal:
+			eng.l.Trace("exit key monitor signaled")
 			eng.RequestTermination()
-		} else {
-			eng.l.Info("exit key monitor canceled")
+			break
 		}
 	}()
 }

@@ -26,9 +26,9 @@ func hsetCommon(ctx *cmdContext, args map[string]any, options bitflags) (output 
 		values = make([]string, 0, len(pairs))
 
 		for _, pair := range pairs {
-			m := pair.(map[string]any)
-			fieldNames = append(fieldNames, m["field"].(string))
-			values = append(values, m["value"].(string))
+			m := pair.(*orderedMap)
+			fieldNames = append(fieldNames, m.mustGet("field").(string))
+			values = append(values, m.mustGet("value").(string))
 		}
 	}
 
@@ -187,18 +187,18 @@ func fnHMSet(ctx *cmdContext, args map[string]any) (output respValue, err error)
 func fnHRandField(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	keyName := args["key"].(string)
 
-	options, _ := args["options"].(map[string]any)
+	options, _ := args["options"].(*orderedMap)
 	var withValues bool
 	var c *int
 	var c32 int
 
 	if options != nil {
-		count, hasCount := options["count"].(int64)
+		count, hasCount := options.mustGet("count").(int64)
 		if hasCount {
 			c32 = int(count)
 			c = &c32
 		}
-		_, withValues = options["withvalues"]
+		_, withValues = options.get("withvalues")
 	}
 	output = ctx.dsc.getHashTableRandField(keyName, c, withValues)
 	return

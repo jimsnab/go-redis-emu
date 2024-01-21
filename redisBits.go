@@ -25,15 +25,15 @@ func fnBitCount(ctx *cmdContext, args map[string]any) (output respValue, err err
 	length := len(strBytes)
 	end := length - 1
 	bitMode := false
-	rangeArg, exists := args["range"].(map[string]any)
+	rangeArg, exists := args["range"].(*orderedMap)
 	if exists {
-		if start64, exists := rangeArg["start"].(int64); exists {
+		if start64, exists := rangeArg.mustGet("start").(int64); exists {
 			start = int(start64)
 		}
-		if end64, exists := rangeArg["end"].(int64); exists {
+		if end64, exists := rangeArg.mustGet("end").(int64); exists {
 			end = int(end64)
 		}
-		_, bitMode = rangeArg["unit.bit"]
+		_, bitMode = rangeArg.get("unit.bit")
 	}
 
 	if bitMode {
@@ -128,11 +128,11 @@ func parseBitfieldOffset(spec string, width int) (offset int, valid bool) {
 	return
 }
 
-func organizeBitfieldOp(tableObj map[string]any, tableKey, valueKey string, opType bitfieldOperation, oflowChanges map[int]overflowType) (op *bitfieldOp, errorText string, valid bool) {
-	var opTable map[string]any
+func organizeBitfieldOp(tableObj *orderedMap, tableKey, valueKey string, opType bitfieldOperation, oflowChanges map[int]overflowType) (op *bitfieldOp, errorText string, valid bool) {
+	var opTable *orderedMap
 	if tableKey != "" {
 		var exists bool
-		opTable, exists = tableObj[tableKey].(map[string]any)
+		opTable, exists = tableObj.mustGet(tableKey).(*orderedMap)
 		if !exists {
 			// valid but empty
 			valid = true
@@ -142,13 +142,13 @@ func organizeBitfieldOp(tableObj map[string]any, tableKey, valueKey string, opTy
 		opTable = tableObj
 	}
 
-	signed, width := parseBitfieldEncodingType(opTable["encoding"].(string))
+	signed, width := parseBitfieldEncodingType(opTable.mustGet("encoding").(string))
 	if width <= 0 {
 		errorText = "ERR Invalid bitfield type. Use something like i16 u8. Note that u64 is not supported but i64 is."
 		valid = false
 		return
 	}
-	offset, valid := parseBitfieldOffset(opTable["offset"].(string), width)
+	offset, valid := parseBitfieldOffset(opTable.mustGet("offset").(string), width)
 	if !valid {
 		errorText = "ERR bit offset is not an integer or out of range"
 		return
@@ -158,7 +158,7 @@ func organizeBitfieldOp(tableObj map[string]any, tableKey, valueKey string, opTy
 	if valueKey != "" {
 		// parse the value arg string to an int64
 		var pe error
-		value, pe = strconv.ParseInt(opTable[valueKey].(string), 10, 64)
+		value, pe = strconv.ParseInt(opTable.mustGet(valueKey).(string), 10, 64)
 		if pe != nil {
 			valid = false
 			return
@@ -167,13 +167,13 @@ func organizeBitfieldOp(tableObj map[string]any, tableKey, valueKey string, opTy
 		value = 0
 	}
 
-	argIndex := opTable["arg-index"].(int)
+	argIndex := opTable.mustGet("arg-index").(int)
 
-	if _, exists := tableObj["overflow-block.wrap"]; exists {
+	if _, exists := tableObj.get("overflow-block.wrap"); exists {
 		oflowChanges[argIndex] = OFLOW_WRAP
-	} else if _, exists := tableObj["overflow-block.sat"]; exists {
+	} else if _, exists := tableObj.get("overflow-block.sat"); exists {
 		oflowChanges[argIndex] = OFLOW_SAT
-	} else if _, exists := tableObj["overflow-block.fail"]; exists {
+	} else if _, exists := tableObj.get("overflow-block.fail"); exists {
 		oflowChanges[argIndex] = OFLOW_FAIL
 	}
 
@@ -200,7 +200,7 @@ func fnBitfield(ctx *cmdContext, args map[string]any) (output respValue, err err
 	writes, valid := args["operation.write"].([]any)
 	if valid {
 		for _, w := range writes {
-			opTable := w.(map[string]any)
+			opTable := w.(*orderedMap)
 
 			// INCRBY
 			op, errText, valid := organizeBitfieldOp(opTable, "write-operation.incrby-block", "increment", BF_INCRBY, oflowChanges)
@@ -233,7 +233,7 @@ func fnBitfield(ctx *cmdContext, args map[string]any) (output respValue, err err
 	if valid {
 		for _, eo := range reads {
 			// GET
-			op, errText, valid := organizeBitfieldOp(eo.(map[string]any), "", "", BF_GET, oflowChanges)
+			op, errText, valid := organizeBitfieldOp(eo.(*orderedMap), "", "", BF_GET, oflowChanges)
 			if !valid {
 				output.data = respErrorString(errText)
 				return
@@ -312,16 +312,16 @@ func fnBitPos(ctx *cmdContext, args map[string]any) (output respValue, err error
 	noEnd := true
 	start64 := int64(0)
 	end64 := int64(-1)
-	rangeArg, hasRange := args["range"].(map[string]any)
+	rangeArg, hasRange := args["range"].(*orderedMap)
 	if hasRange {
 		bitToken := false
-		start64 = rangeArg["start"].(int64)
+		start64 = rangeArg.mustGet("start").(int64)
 
-		endIndex, exists := rangeArg["end-unit-block"].(map[string]any)
+		endIndex, exists := rangeArg.mustGet("end-unit-block").(*orderedMap)
 		if exists {
 			noEnd = false
-			end64 = endIndex["end"].(int64)
-			_, bitToken = endIndex["unit.bit"]
+			end64 = endIndex.mustGet("end").(int64)
+			_, bitToken = endIndex.get("unit.bit")
 		}
 
 		if bitToken {

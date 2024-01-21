@@ -27,7 +27,7 @@ type (
 	}
 )
 
-func parseCommand(cmdToken string, cmd *redisCommand, opts bitflags, input ...respValue) (args map[string]any, keywords int, parsedToken string) {
+func parseCommand(cmdToken string, cmd *redisCommand, opts bitflags, input ...respValue) (args *orderedMap, keywords int, parsedToken string) {
 	cap := &commandArgParser{
 		opts:       opts,
 		tokenIndex: map[string][]int{},
@@ -36,7 +36,7 @@ func parseCommand(cmdToken string, cmd *redisCommand, opts bitflags, input ...re
 	return cap.parseInput(cmdToken, cmd, input...)
 }
 
-func (cap *commandArgParser) parseInput(cmdToken string, cmd *redisCommand, input ...respValue) (args map[string]any, keywords int, parsedToken string) {
+func (cap *commandArgParser) parseInput(cmdToken string, cmd *redisCommand, input ...respValue) (args *orderedMap, keywords int, parsedToken string) {
 	var valid bool
 
 	if len(cmd.Subcommands) == 0 {
@@ -68,7 +68,7 @@ func (cap *commandArgParser) parseInput(cmdToken string, cmd *redisCommand, inpu
 
 	if flagHasOne(cap.opts, PARSE_ADD_TOKEN_INDEX_TO_ARGS) {
 		for name, index := range cap.tokenIndex {
-			args[fmt.Sprintf("%s-index", name)] = index
+			args.set(fmt.Sprintf("%s-index", name), index)
 		}
 	}
 	return
@@ -170,11 +170,11 @@ func (cap *commandArgParser) parseOneInput(arg *redisArg, argIndex int, started 
 		return
 
 	case "block":
-		var block map[string]any
+		var block *orderedMap
 		block, inputsUsed = cap.parseInputBlock(arg.Arguments, argIndex, input[ipos:]...)
 		if inputsUsed > 0 {
 			if flagHasOne(cap.opts, PARSE_ADD_ARG_INDEX_TO_BLOCK) {
-				block["arg-index"] = argIndex
+				block.set("arg-index", argIndex)
 			}
 			argKey = arg.Name
 			argVal = block
@@ -209,9 +209,9 @@ func (cap *commandArgParser) parseOneOf(args redisArgs, argIndex int, input ...r
 	return
 }
 
-func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input ...respValue) (block map[string]any, inputsUsed int) {
+func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input ...respValue) (block *orderedMap, inputsUsed int) {
 	argPos := 0
-	block = map[string]any{}
+	block = newOrderedMap()
 	skippedOptionals := redisArgs{}
 
 	testPos := 0
@@ -250,17 +250,18 @@ func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input
 			}
 
 			if arg.Multiple || arg.MultipleToken {
-				a, exists := block[subKey].([]any)
+				t, _ := block.get(subKey)
+				a, exists := t.([]any)
 				if !exists {
 					a = []any{}
 				}
-				block[subKey] = append(a, subVal)
+				block.set(subKey, append(a, subVal))
 
 				if arg.Multiple {
 					started = testPos
 				}
 			} else {
-				block[subKey] = subVal
+				block.set(subKey, subVal)
 				testPos++
 			}
 		}
@@ -268,8 +269,8 @@ func (cap *commandArgParser) parseInputBlock(args redisArgs, argIndex int, input
 	return
 }
 
-func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) (values map[string]any, inputsUsed int, valid bool) {
-	values = map[string]any{}
+func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) (values *orderedMap, inputsUsed int, valid bool) {
+	values = newOrderedMap()
 	apos := 0
 	ipos := 0
 	skippedOptionals := redisArgs{}
@@ -308,22 +309,23 @@ func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) 
 
 			switch pms {
 			case PARSE_SINGLE_VALUE, PARSE_ONE_OF_TOKEN:
-				values[argKey] = argValue
+				values.set(argKey, argValue)
 				apos++
 
 			case PARSE_MULTI_ONE_OF_TOKEN:
-				_, exists := values[argKey]
+				_, exists := values.get(argKey)
 				if exists {
 					return
 				}
-				values[argKey] = argValue
+				values.set(argKey, argValue)
 
 			case PARSE_MULTI_VALUE:
-				valueArray, exists := values[argKey].([]any)
+				t, _ := values.get(argKey)
+				valueArray, exists := t.([]any)
 				if !exists {
 					valueArray = []any{}
 				}
-				values[argKey] = append(valueArray, argValue)
+				values.set(argKey, append(valueArray, argValue))
 
 				if arg.Multiple {
 					started = apos
@@ -338,12 +340,12 @@ func (cap *commandArgParser) parseEachInput(args redisArgs, input ...respValue) 
 					rightVals, testLength, subValid := cap.parseEachInput(args[apos+1:], input[ipos:]...)
 					if subValid {
 						ipos += testLength
-						for k, v := range rightVals {
-							_, exists := values[k]
+						for _, k := range rightVals.order {
+							_, exists := values.get(k)
 							if exists {
 								panic("reused argument conflict in arg definition")
 							}
-							values[k] = v
+							values.set(k, rightVals.mustGet(k))
 						}
 						valid = true
 						break

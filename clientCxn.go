@@ -170,33 +170,36 @@ func (cc *clientCxn) onInitialize() {
 func (cc *clientCxn) onWaitForCommand() {
 	buffer := make([]byte, 1024*8)
 
-	cc.mu.Lock()
-	cc.waiting = true
-	cc.mu.Unlock()
-
-	n, err := cc.cxn.Read(buffer)
-
-	cc.mu.Lock()
-	cc.waiting = false
-	cc.mu.Unlock()
-
-	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			cc.cs.l.Debugf("read error from %s: %s", cc.cxn.RemoteAddr().String(), err)
-		}
-		cc.queueStateChange(csTerminate, nil)
-		return
-	}
-
-	if cc.inbound == nil {
-		cc.inbound = buffer[0:n]
-	} else {
-		cc.inbound = append(cc.inbound, buffer[0:n]...)
-	}
-
-	cc.cs.l.Tracef("received command data from client")
-
 	cmd, length := cc.parseCommand()
+	if length == 0 {
+		cc.mu.Lock()
+		cc.waiting = true
+		cc.mu.Unlock()
+
+		n, err := cc.cxn.Read(buffer)
+
+		cc.mu.Lock()
+		cc.waiting = false
+		cc.mu.Unlock()
+
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				cc.cs.l.Debugf("read error from %s: %s", cc.cxn.RemoteAddr().String(), err)
+			}
+			cc.queueStateChange(csTerminate, nil)
+			return
+		}
+
+		if cc.inbound == nil {
+			cc.inbound = buffer[0:n]
+		} else {
+			cc.inbound = append(cc.inbound, buffer[0:n]...)
+		}
+
+		cc.cs.l.Tracef("received command data from client")
+		cmd, length = cc.parseCommand()
+	}
+
 	if length == 0 {
 		cc.queueStateChange(csWaitForCommand, nil)
 	} else {

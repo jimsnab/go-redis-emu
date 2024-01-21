@@ -104,7 +104,8 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 	hasOldFormat := false
 	includeMe := false
 
-	for arg, v := range args {
+	for _, arg := range ctx.args.order {
+		v := ctx.args.mustGet(arg)
 		valArray, valid := v.([]any)
 		if !valid {
 			valArray = []any{v}
@@ -142,8 +143,10 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 				filter["laddr"] = val.(string)
 			case "filter.new-format.skipme.no":
 				includeMe = true
+				fmt.Println("includeMe no", includeMe)
 			case "filter.new-format.skipme.yes":
 				includeMe = false
+				fmt.Println("includeMe yes", includeMe)
 
 			default:
 				panic("unexpected arg")
@@ -161,8 +164,10 @@ func fnClientKill(ctx *cmdContext, args map[string]any) (output respValue, err e
 
 		if shouldClose {
 			// skipMe available in new format only
+			fmt.Println("should close? ", ctx.cs.id, cs.id, closed)
 			if ctx.cs.id == cs.id && closed >= 0 {
 				shouldClose = includeMe
+				fmt.Println("should close! ", shouldClose)
 			}
 
 			if shouldClose {

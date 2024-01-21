@@ -271,11 +271,15 @@ func TestRedisClientKillRepeated(t *testing.T) {
 
 	output := ts.ProcessCommand("client", "kill", "skipme", "no", "skipme", "yes")
 	if !output.isInt(0) || ts.IsCloseRequested() {
+		fmt.Println(output)
+		fmt.Println(ts)
 		t.Fatal("kill skipme repeated fail")
 	}
 
 	output = ts.ProcessCommand("client", "kill", "skipme", "yes", "skipme", "no")
 	if !output.isAtLeast(1) || !ts.IsCloseRequested() {
+		fmt.Println(output)
+		fmt.Println(ts)
 		t.Fatal("kill skipme repeated yes fail")
 	}
 }

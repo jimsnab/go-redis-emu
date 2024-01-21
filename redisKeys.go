@@ -325,9 +325,9 @@ func fnMset(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 	strVals := make([]string, 0, len(keyValuePairs))
 
 	for _, t := range keyValuePairs {
-		table := t.(map[string]any)
-		strKeys = append(strKeys, table["key"].(string))
-		strVals = append(strVals, table["value"].(string))
+		table := t.(*orderedMap)
+		strKeys = append(strKeys, table.mustGet("key").(string))
+		strVals = append(strVals, table.mustGet("value").(string))
 	}
 
 	output = ctx.dsc.setKeys(strKeys, strVals, options)

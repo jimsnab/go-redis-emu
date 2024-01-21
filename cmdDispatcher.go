@@ -18,7 +18,7 @@ type (
 		cs       *clientState
 		dsc      *dataStoreCommand
 		cd       *cmdDispatcher
-		args     map[string]any
+		args     *orderedMap
 		rawArgs  respArray
 		multi    bool
 	}
@@ -431,7 +431,7 @@ func (cd *cmdDispatcher) dispatchHandler(ctx *cmdContext) (output respValue) {
 		return
 	}
 	l.Tracef("calling handler for command '%s'", cmdToken)
-	result, err := handler(ctx, ctx.args)
+	result, err := handler(ctx, ctx.args.m)
 	if err != nil {
 		l.Warnf("error processing command '%s': %s", cmdToken, err)
 		output.data = respErrorString(fmt.Sprintf("ERR Unknown command or wrong number of arguments for '%s'. Try COMMAND HELP.", ctx.cmdName))
@@ -532,7 +532,8 @@ func (cd *cmdDispatcher) cmdGetKeys(argArray respArray, includeFlags bool) (outp
 
 		case "keyword":
 			bsk := keySpec.BeginSearch.Spec.(*redisInfoBeginSearchKeyword)
-			indicies, exists := parsed[fmt.Sprintf("%s-index", bsk.Keyword)].([]int)
+			t, _ := parsed.get(fmt.Sprintf("%s-index", bsk.Keyword))
+			indicies, exists := t.([]int)
 			if !exists {
 				output.data = respErrorString("ERR Invalid number of arguments specified for command")
 				return

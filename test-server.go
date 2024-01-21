@@ -26,7 +26,7 @@ type (
 		port            int
 		iface           string
 		persistBasePath string
-		quitSignal chan struct{}
+		quitSignal      chan struct{}
 	}
 )
 
@@ -39,7 +39,7 @@ func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, qu
 		port:            port,
 		iface:           iface,
 		persistBasePath: persistBasePath,
-		quitSignal:  quitSignal,
+		quitSignal:      quitSignal,
 	}
 
 	return
@@ -225,4 +225,10 @@ func (eng *RedisEmu) WaitForTermination() {
 	// wait for server to quiesque
 	eng.wg.Wait()
 	eng.l.Info("finished serving requests")
+}
+
+// Calls RequestTermination then WaitForTermination
+func (eng *RedisEmu) Close() {
+	eng.RequestTermination()
+	eng.WaitForTermination()
 }

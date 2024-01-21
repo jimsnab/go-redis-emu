@@ -346,7 +346,7 @@ func fnCommandList(ctx *cmdContext, args map[string]any) (output respValue, err 
 func fnSort(ctx *cmdContext, args map[string]any) (output respValue, err error) {
 	sourceKeyName := args["key"].(string)
 	byPattern, _ := args["by"].(string)
-	offset_count, hasOffset := args["offset_count"].(map[string]any)
+	offset_count, hasOffset := args["offset_count"].(*orderedMap)
 	getPatternsAny, _ := args["get"].([]any)
 	_, isDesc := args["order.desc"]
 	_, isAlpha := args["sorting"] // this name may be a redis bug
@@ -355,8 +355,8 @@ func fnSort(ctx *cmdContext, args map[string]any) (output respValue, err error) 
 	start := -1
 	count := -1
 	if hasOffset {
-		offset64, _ := offset_count["offset"].(int64)
-		count64, _ := offset_count["count"].(int64)
+		offset64, _ := offset_count.mustGet("offset").(int64)
+		count64, _ := offset_count.mustGet("count").(int64)
 
 		start = int(offset64)
 		count = int(count64)
@@ -393,9 +393,9 @@ func fnDbSize(ctx *cmdContext, args map[string]any) (output respValue, err error
 }
 
 func fnHello(ctx *cmdContext, args map[string]any) (output respValue, err error) {
-	helloArgs, hasArgs := args["arguments"].(map[string]any)
+	helloArgs, hasArgs := args["arguments"].(*orderedMap)
 	if hasArgs {
-		ver, hasVer := helloArgs["protover"].(int64)
+		ver, hasVer := helloArgs.mustGet("protover").(int64)
 		if hasVer {
 			ctx.cs.respVersion = int(ver)
 		}

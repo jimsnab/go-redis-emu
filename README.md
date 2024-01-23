@@ -74,4 +74,30 @@ do not execute against a production redis server -- as long as the production
 code only uses that redis client singleton to interact with redis, and
 the test only flushes the database via `testInitializeDb()`.
 
+# Dispatch Hooks
 
+If you want to inject server-side errors into your unit tests, or force a
+specific redis response, you can set a dispatch hook.
+
+The hook function receives the redis command and its argument map. If the
+hook function wants to fail the request, it returns an error, and the client
+will receive `ERR <your error text>`. If the hook function wants to return
+a specific result, it places that in the `result` return variable, and
+must also set `hooked` to `true`.
+
+**Example:**
+
+Fail dbsize, and always return 22 for INCR:
+
+```
+	emu.SetHook(func(cmd string, args map[string]any) (hooked bool, result any, err error) {
+		if cmd == "dbsize" {
+			err = errors.New("not right now")
+		} else if cmd == "incr" {
+			result = 22
+			hooked = true
+		}
+
+		return
+	})
+```

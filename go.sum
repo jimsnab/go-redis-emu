@@ -8,9 +8,13 @@ github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f h1:lO4WD4F/r
 github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f/go.mod h1:cuUVRXasLTGF7a8hSLbxyZXjz+1KgoB3wDUb6vlszIc=
 github.com/google/uuid v1.5.0 h1:1p67kYwdtXjb0gL0BPiP1Av9wiZPo5A8z2cWkTZ+eyU=
 github.com/google/uuid v1.5.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/jimsnab/go-lane v1.10.0 h1:M7GiqL4acawp1HQZzHs5kalShDqNRKTo+6p0d0a6EQM=
 github.com/jimsnab/go-lane v1.10.0/go.mod h1:DUz/mJoDc5crV0AfC5Ya8J3769+MCpTsLDNQEeRR5hw=
 github.com/jimsnab/go-lane v1.10.2 h1:/wrQz3lnzhJO0Wf6eP3DH+6i3Vd7nipa1lnu1IzqbPA=
 github.com/jimsnab/go-lane v1.10.2/go.mod h1:DUz/mJoDc5crV0AfC5Ya8J3769+MCpTsLDNQEeRR5hw=
+github.com/jimsnab/go-lane v1.11.0 h1:KiiOH9VfKumrLnaRE+flMk28IozcV6VSFUp2ryP5z2E=
+github.com/jimsnab/go-lane v1.11.0/go.mod h1:DUz/mJoDc5crV0AfC5Ya8J3769+MCpTsLDNQEeRR5hw=
 github.com/redis/go-redis/v9 v9.4.0 h1:Yzoz33UZw9I/mFhx4MNrB6Fk+XHO1VukNcCa1+lwyKk=
 github.com/redis/go-redis/v9 v9.4.0/go.mod h1:hdY0cQFCN4fnSYT6TkisLufl/4W5UIXyv0b/CLO2V2M=

@@ -22,6 +22,7 @@ type (
 		server   net.Listener
 		cancelFn context.CancelFunc
 		wg       sync.WaitGroup
+		hook     DispatchHook
 
 		port            int
 		iface           string
@@ -58,7 +59,7 @@ func (eng *RedisEmu) Start() {
 		fmt.Printf("\r\n\r\nREDIS Emulator is now running\r\n\r\nPress any key to quit\r\n\r\n")
 	}
 
-	eng.dss = newDataStoreSet(eng.l, eng.persistBasePath)
+	eng.dss = newDataStoreSet(eng.l, eng.persistBasePath, &eng.hook)
 
 	// launch termination monitiors
 	eng.killSignalMonitor()
@@ -231,4 +232,11 @@ func (eng *RedisEmu) WaitForTermination() {
 func (eng *RedisEmu) Close() {
 	eng.RequestTermination()
 	eng.WaitForTermination()
+}
+
+func (eng *RedisEmu) SetHook(hook DispatchHook) {
+	eng.mu.Lock()
+	defer eng.mu.Unlock()
+
+	eng.hook = hook
 }

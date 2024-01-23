@@ -430,12 +430,39 @@ func (cd *cmdDispatcher) dispatchHandler(ctx *cmdContext) (output respValue) {
 		output.data = respErrorString(fmt.Sprintf("ERR Unsupported command '%s'", cmdToken))
 		return
 	}
-	l.Tracef("calling handler for command '%s'", cmdToken)
-	result, err := handler(ctx, ctx.args.m)
-	if err != nil {
-		l.Warnf("error processing command '%s': %s", cmdToken, err)
-		output.data = respErrorString(fmt.Sprintf("ERR Unknown command or wrong number of arguments for '%s'. Try COMMAND HELP.", ctx.cmdName))
-		return
+
+	var result respValue
+	cd.dss.mu.Lock()
+	phook := cd.dss.phook
+	cd.dss.mu.Unlock()
+
+	if phook != nil {
+		hook := *phook
+		if hook != nil {
+			l.Tracef("calling handler hook for command '%s'", cmdToken)
+			hooked, r, err := hook(cmdToken, ctx.args.toNative())
+			if err != nil {
+				l.Warnf("hook error processing command '%s': %s", cmdToken, err)
+				output.data = respErrorString(fmt.Sprintf("ERR %s", err.Error()))
+				return
+			}
+
+			if hooked {
+				result = nativeValueToResp(r)
+				handler = nil
+			}
+		}
+	}
+
+	if handler != nil {
+		l.Tracef("calling handler for command '%s'", cmdToken)
+		var err error
+		result, err = handler(ctx, ctx.args.m)
+		if err != nil {
+			l.Warnf("error processing command '%s': %s", cmdToken, err)
+			output.data = respErrorString(fmt.Sprintf("ERR Unknown command or wrong number of arguments for '%s'. Try COMMAND HELP.", ctx.cmdName))
+			return
+		}
 	}
 
 	if ctx.cs.respVersion == 2 {

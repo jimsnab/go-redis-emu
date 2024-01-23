@@ -116,7 +116,7 @@ func NewRedisTestClientResp2(t *testing.T) RedisTestClient {
 
 	ts := &testClient{
 		started: time.Now(),
-		dss:     newDataStoreSet(l, ""),
+		dss:     newDataStoreSet(l, "", nil),
 		addr:    fmt.Sprintf("1.2.3.4:%d", port),
 		laddr:   "127.0.0.1:6379",
 	}
@@ -170,6 +170,11 @@ func (ts *testClient) ProcessCommand(cmdName string, args ...any) (output respVa
 
 	atomic.StoreInt32(&ts.processing, 0)
 	return
+}
+
+func (ts *testClient) ProcessCommandSyncStart(wg *sync.WaitGroup, cmdName string, args ...any) (output respValue) {
+	wg.Done()
+	return ts.ProcessCommand(cmdName, args...)
 }
 
 func (ts *testClient) DumpKey(keyName string) {

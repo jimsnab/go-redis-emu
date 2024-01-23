@@ -17,14 +17,18 @@ type (
 		basePath string
 		dbs      map[int]*dataStore
 		users    map[string]*dataStoreUser
+		phook    *DispatchHook
 	}
+
+	DispatchHook func(cmd string, args map[string]any) (hooked bool, result any, err error)
 )
 
-func newDataStoreSet(l lane.Lane, basePath string) *dataStoreSet {
+func newDataStoreSet(l lane.Lane, basePath string, phook *DispatchHook) *dataStoreSet {
 	dss := &dataStoreSet{
 		basePath: basePath,
 		dbs:      map[int]*dataStore{},
 		users:    map[string]*dataStoreUser{"default": newDataStoreUser()},
+		phook:    phook,
 	}
 
 	dss.createDbUnlocked(0)

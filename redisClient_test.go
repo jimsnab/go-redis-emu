@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestRedisEcho(t *testing.T) {
@@ -461,15 +460,18 @@ func TestRedisUnblock(t *testing.T) {
 
 	// unblock with timeout
 	var wg sync.WaitGroup
+	var starting sync.WaitGroup
 	waitFail := true
 	wg.Add(1)
+	starting.Add(1)
 	go func() {
+		starting.Done()
 		output := ts.ProcessCommand("blmove", "k1", "k2", "right", "left", "0")
 		waitFail = !output.isNull()
 		wg.Done()
 	}()
+	starting.Wait()
 
-	time.Sleep(time.Millisecond)
 	output := ts2.ProcessCommand("client", "unblock", fmt.Sprintf("%d", ts.ClientID()))
 	if !output.isInt(1) {
 		t.Fatal("client unblock fail")
@@ -482,14 +484,16 @@ func TestRedisUnblock(t *testing.T) {
 
 	// unblock with error
 	wg.Add(1)
+	starting.Add(1)
 	go func() {
+		starting.Done()
 		output := ts.ProcessCommand("blmove", "k1", "k2", "right", "left", "0")
 		str, _ := output.toString()
 		waitFail = !output.isErrorType() || !strings.Contains(str, "UNBLOCKED")
 		wg.Done()
 	}()
+	starting.Wait()
 
-	time.Sleep(time.Millisecond)
 	output = ts2.ProcessCommand("client", "unblock", fmt.Sprintf("%d", ts.ClientID()), "error")
 	if !output.isInt(1) {
 		t.Fatal("client unblock error fail")
@@ -502,13 +506,15 @@ func TestRedisUnblock(t *testing.T) {
 
 	// unblock with timeout token
 	wg.Add(1)
+	starting.Add(1)
 	go func() {
+		starting.Done()
 		output := ts.ProcessCommand("blmove", "k1", "k2", "right", "left", "0")
 		waitFail = !output.isNull()
 		wg.Done()
 	}()
+	starting.Wait()
 
-	time.Sleep(time.Millisecond)
 	output = ts2.ProcessCommand("client", "unblock", fmt.Sprintf("%d", ts.ClientID()), "timeout")
 	if !output.isInt(1) {
 		t.Fatal("client unblock timeout token fail")

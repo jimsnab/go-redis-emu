@@ -42,6 +42,20 @@ func (om *orderedMap) mustGet(k string) (v any) {
 	return
 }
 
+func (om *orderedMap) toNative() map[string]any {
+	m := map[string]any{}
+	for k, v := range om.m {
+		switch t := v.(type) {
+		case *orderedMap:
+			m[k] = t.toNative()
+		default:
+			m[k] = t
+		}
+	}
+
+	return m
+}
+
 func newRespMap() respMap {
 	return respMap{
 		orderedRespMap: orderedRespMap{

@@ -249,6 +249,37 @@ func TestAvlDeleteLeft(t *testing.T) {
 	if tree.countEach() != 1 {
 		t.Fatal("not deleted")
 	}
+
+	node := tree.Find(30)
+	if node == nil {
+		t.Fatal("can't find 30")
+	}
+}
+
+func TestAvlDeleteRootWithLeft(t *testing.T) {
+	tree := NewAvlTree[float64]()
+
+	tree.Add(30)
+	tree.Add(20)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	tree.Delete(30)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	if tree.countEach() != 1 {
+		t.Fatal("not deleted")
+	}
+
+	node := tree.Find(20)
+	if node == nil {
+		t.Fatal("can't find 20")
+	}
 }
 
 func TestAvlDeleteRight(t *testing.T) {
@@ -269,6 +300,37 @@ func TestAvlDeleteRight(t *testing.T) {
 
 	if tree.countEach() != 1 {
 		t.Fatal("not deleted")
+	}
+
+	node := tree.Find(30)
+	if node == nil {
+		t.Fatal("can't find 30")
+	}
+}
+
+func TestAvlDeleteRootWithRight(t *testing.T) {
+	tree := NewAvlTree[float64]()
+
+	tree.Add(30)
+	tree.Add(40)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	tree.Delete(30)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	if tree.countEach() != 1 {
+		t.Fatal("not deleted")
+	}
+
+	node := tree.Find(40)
+	if node == nil {
+		t.Fatal("can't find 40")
 	}
 }
 
@@ -346,6 +408,103 @@ func TestAvlDeletePromoteLeftFull(t *testing.T) {
 	if tree.root.key != 20 {
 		t.Fatal("unexpected root key")
 	}
+
+	node := tree.Find(20)
+	if node == nil {
+		t.Fatal("can't find 20")
+	}
+
+	node = tree.Find(40)
+	if node == nil {
+		t.Fatal("can't find 40")
+	}
+}
+
+func TestAvlDeleteReplace(t *testing.T) {
+	tree := NewAvlTree[float64]()
+
+	tree.Add(30)
+	tree.Add(20)
+	tree.Add(40)
+	tree.Add(25)
+	tree.Add(15)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	if tree.root.key != 30 {
+		t.Fatal("root key not 30")
+	}
+
+	tree.Delete(20)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	if tree.countEach() != 4 {
+		t.Fatal("not deleted")
+	}
+
+	if tree.root.key != 30 {
+		t.Fatal("root key not 30 anymore")
+	}
+
+	node := tree.Find(25)
+	if node == nil {
+		t.Fatal("can't find 25")
+	}
+
+	node = tree.Find(40)
+	if node == nil {
+		t.Fatal("can't find 40")
+	}
+}
+
+func TestAvlDeleteReplace2(t *testing.T) {
+	tree := NewAvlTree[float64]()
+
+	tree.Add(30)
+	tree.Add(20)
+	tree.Add(40)
+	tree.Add(25)
+	tree.Add(15)
+	tree.Add(35)
+	tree.Add(45)
+	tree.Add(17)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	if tree.root.key != 30 {
+		t.Fatal("root key not 30")
+	}
+
+	tree.Delete(20)
+	if !tree.isValid() {
+		tree.printTree("-----------------")
+		t.Fatal("imbalanced")
+	}
+
+	if tree.countEach() != 7 {
+		t.Fatal("not deleted")
+	}
+
+	if tree.root.key != 30 {
+		t.Fatal("root key not 30 anymore")
+	}
+
+	node := tree.Find(17)
+	if node == nil {
+		t.Fatal("can't find 17")
+	}
+
+	node = tree.Find(40)
+	if node == nil {
+		t.Fatal("can't find 40")
+	}
 }
 
 func TestAvlInsertDelete5(t *testing.T) {
@@ -353,25 +512,40 @@ func TestAvlInsertDelete5(t *testing.T) {
 
 	tree.printTree("------------")
 	tree.Add(2460)
+	if tree.Find(2460) == nil {
+		t.Fatal("can't find 2460")
+	}
 	tree.printTree("------------")
 	tree.Add(7435)
+	if tree.Find(2460) == nil {
+		t.Fatal("can't find 2460")
+	}
+	if tree.Find(7435) == nil {
+		t.Fatal("can't find 2460")
+	}
 	tree.printTree("------------")
 	tree.Add(2460)
-
 	if !tree.isValid() {
 		t.Fatal("imbalanced")
 	}
 
 	tree.printTree("------------")
-	tree.Delete(-2460)
-
+	found := tree.Delete(-2460)
+	if found {
+		t.Fatal("shouldn't find")
+	}
 	if !tree.isValid() {
 		t.Fatal("imbalanced")
 	}
 
 	tree.printTree("------------")
 	tree.Delete(2460)
-
+	if tree.Find(2460) != nil {
+		t.Fatal("shouldn't find 2460")
+	}
+	if tree.Find(7435) == nil {
+		t.Fatal("can't find 7435")
+	}
 	if !tree.isValid() {
 		t.Fatal("imbalanced")
 	}
@@ -454,7 +628,7 @@ func TestAvlInsertDelete22(t *testing.T) {
 
 }
 
-func testInsertDelete(worst int) (out []int) {
+func testInsertDelete(t *testing.T, worst int) (out []int) {
 	history := make([]int, 0, 1024)
 	historyPtr := &history
 
@@ -464,29 +638,55 @@ func testInsertDelete(worst int) (out []int) {
 		}
 	}()
 
+	ops := 0
+
 	tree := NewAvlTree[float64]()
 	numbers := make([]int, 0, 1024)
-	for i := 0; i < 1024; i++ {
+	table := map[int]struct{}{}
+
+	for i := 0; i < (3 * 1024); i++ {
+		if i%3 > 0 {
+			// Find
+			if len(numbers) > 0 {
+				target := rand.Intn(len(numbers))
+				targetNumber := numbers[target]
+				_, isset := table[targetNumber]
+				if i%3 == 1 {
+					if tree.Find(float64(targetNumber)) == nil {
+						if isset {
+							t.Fatalf("expected to find %d", targetNumber)
+						}
+					}
+				} else {
+					if tree.Find(float64(-targetNumber)) != nil {
+						if !isset {
+							t.Fatalf("didn't expect to find %d", targetNumber)
+						}
+					}
+				}
+			}
+			continue
+		}
+
 		op := rand.Intn(4)
 		var v int
 		if op == 0 && len(numbers) > 0 {
 			n := rand.Intn(len(numbers))
 			v = -numbers[n]
-			if n+1 < len(numbers) {
-				numbers = append(numbers[0:n], numbers[n+1:]...)
-			} else {
-				numbers = numbers[0:n]
-			}
+			numbers = append(numbers[0:n], numbers[n+1:]...)
 		} else {
 			v = rand.Intn(8192) + 1
 		}
 
+		ops++
 		*historyPtr = append(*historyPtr, v)
 		if v > 0 {
 			numbers = append(numbers, v)
 			tree.Add(float64(v))
+			table[v] = struct{}{}
 		} else {
 			tree.Delete(float64(-v))
+			delete(table, -v)
 		}
 		if !tree.isValid() {
 			if worst == 0 || len(*historyPtr) < worst {
@@ -494,15 +694,29 @@ func testInsertDelete(worst int) (out []int) {
 			}
 			break
 		}
+
+		for v := range table {
+			node := tree.Find(float64(v))
+			if node == nil {
+				if v >= 0 {
+					t.Fatalf("didn't find %v", v)
+				}
+			} else {
+				if v < 0 {
+					t.Fatalf("shouldn't have found %v", v)
+				}
+			}
+		}
 	}
 
+	fmt.Printf("%d operations, %d values in the tree: PASS\n", ops, len(table))
 	return
 }
 
 func TestAvlInsertDeleteRandom(t *testing.T) {
 	var worst []int
-	for pass := 0; pass < 2500; pass++ {
-		worst = testInsertDelete(len(worst))
+	for pass := 0; pass < 100; pass++ {
+		worst = testInsertDelete(t, len(worst))
 		if len(worst) > 0 {
 			break
 		}

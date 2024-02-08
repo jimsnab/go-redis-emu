@@ -1543,6 +1543,11 @@ func (dsc *dataStoreCommand) lmove(srcKeyName, destKeyName string, srcLeft, dest
 	}
 	uk.elements = 1
 
+	// clean up if source list became empty
+	if srcList.count == 0 {
+		dsc.ds.data.remove(srcKeyName)
+	}
+
 	output.data = respBulkString(element)
 	return
 }

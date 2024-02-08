@@ -662,6 +662,26 @@ func TestRedisLMove(t *testing.T) {
 	}
 }
 
+func TestRedisLMoveSrcKeyGone(t *testing.T) {
+	ts := NewRedisTestClient(t)
+	defer ts.Close()
+
+	output := ts.ProcessCommand("rpush", "key1", "fox")
+	if !output.isInt(1) {
+		t.Fatal("rpush error")
+	}
+
+	output = ts.ProcessCommand("lmove", "key1", "key2", "left", "left")
+	if !output.isValue("fox") {
+		t.Fatal("lmove fail")
+	}
+
+	output = ts.ProcessCommand("keys", "*")
+	if !output.isValue([]any{"key2"}) {
+		t.Fatal("key move fail")
+	}
+}
+
 func TestRedisLMPop(t *testing.T) {
 	ts := NewRedisTestClient(t)
 	defer ts.Close()

@@ -52,7 +52,10 @@ func toBitmap(bytes []byte) string {
 	return text
 }
 
+var _ = toBitmapU64
+
 func toBitmapU64(val uint64) string {
+
 	text := ""
 	for i := 0; i < 8; i++ {
 		if text != "" {
@@ -63,6 +66,8 @@ func toBitmapU64(val uint64) string {
 	}
 	return text
 }
+
+var _ = logBitmap
 
 func logBitmap(l lane.Lane, bytes []byte) {
 	text := toBitmap(bytes)
@@ -90,6 +95,8 @@ func logBitmapKey(l lane.Lane, dsc *dataStoreCommand, keyName string) {
 		l.Tracef("%s: is not a bitmap key", keyName)
 	}
 }
+
+var _ = isPowerOfTwo
 
 func isPowerOfTwo(n uint32) bool {
 	return (n&(n-1) == 0) && (n > 0)

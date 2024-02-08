@@ -135,9 +135,7 @@ func (rm respMap) String() string {
 	var sb strings.Builder
 
 	keys := make([]respValue, 0, len(rm.m))
-	for _, k := range rm.order {
-		keys = append(keys, k)
-	}
+	keys = append(keys, rm.order...)
 	sort.Slice(keys, func(i, j int) bool { return keys[i].String() < keys[j].String() })
 
 	sb.WriteRune('{')
@@ -379,6 +377,8 @@ func nativeStringArrayToResp(val []string) (a respArray) {
 	return
 }
 
+var _ = nativeTableToResp2
+
 func nativeTableToResp2(val map[string]any) (a respArray) {
 	names := make([]string, 0, len(val))
 	for name := range val {
@@ -541,6 +541,7 @@ func (rv *respValue) isResp3() bool {
 }
 
 func (rv *respValue) isEnd() bool {
+	var _ = rv.isResp3 // stop unused warning for a function we'd like to keep for reference and development
 	_, valid := rv.data.(respEnd)
 	return valid
 }

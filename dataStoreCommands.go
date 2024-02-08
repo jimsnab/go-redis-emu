@@ -81,8 +81,6 @@ type (
 		elements int
 	}
 
-	sorterFn func(vals []sortVal)
-
 	sortVal struct {
 		data        string
 		sortByStr   string
@@ -129,6 +127,12 @@ func (dsc *dataStoreCommand) releaseExclusive() {
 }
 
 func (dsc *dataStoreCommand) dumpKey(l lane.Lane, keyName string) {
+	// stop the unused warning for some functions we'd like to keep for reference and development
+	var _ = dsc.getHashTableSet
+	var _ = dsc.getSetMember
+	var _ = dsc.getSet
+	var _ = dsc.deleteSetMembers
+
 	sk, exists := dsc.getKeyObject(keyName)
 	if !exists {
 		l.Tracef("key '%s' does not exist", keyName)
@@ -1179,7 +1183,7 @@ func (dsc *dataStoreCommand) lpushx(keyName string, values [][]byte) (output res
 	return
 }
 
-func (dsc *dataStoreCommand) lpopUnlocked(list *storeList, item *listItem) {
+func (dsc *dataStoreCommand) lpopUnlocked(keyName string, list *storeList, item *listItem) {
 	list.head = item.next
 	if list.head == nil {
 		list.tail = nil
@@ -1191,6 +1195,11 @@ func (dsc *dataStoreCommand) lpopUnlocked(list *storeList, item *listItem) {
 	// item removed, dereference
 	item.next = nil
 	item.prev = nil
+
+	// clean up if source list became empty
+	if list.count == 0 {
+		dsc.ds.data.remove(keyName)
+	}
 
 	dsc.setDirty()
 }
@@ -1212,7 +1221,7 @@ func (dsc *dataStoreCommand) lpop(keyName string, count int) (values [][]byte, e
 			break
 		}
 		values = append(values, item.element)
-		dsc.lpopUnlocked(list, item)
+		dsc.lpopUnlocked(keyName, list, item)
 	}
 	return
 }
@@ -1279,7 +1288,7 @@ func (dsc *dataStoreCommand) rpushx(keyName string, values [][]byte) (output res
 	return
 }
 
-func (dsc *dataStoreCommand) rpopUnlocked(list *storeList, item *listItem) {
+func (dsc *dataStoreCommand) rpopUnlocked(keyName string, list *storeList, item *listItem) {
 	list.tail = item.prev
 	if list.tail == nil {
 		list.head = nil
@@ -1291,6 +1300,11 @@ func (dsc *dataStoreCommand) rpopUnlocked(list *storeList, item *listItem) {
 	// item removed, dereference
 	item.next = nil
 	item.prev = nil
+
+	// clean up if source list became empty
+	if list.count == 0 {
+		dsc.ds.data.remove(keyName)
+	}
 
 	dsc.setDirty()
 }
@@ -1312,7 +1326,7 @@ func (dsc *dataStoreCommand) rpop(keyName string, count int) (values [][]byte, e
 			break
 		}
 		values = append(values, item.element)
-		dsc.rpopUnlocked(list, item)
+		dsc.rpopUnlocked(keyName, list, item)
 	}
 	return
 }
@@ -1528,10 +1542,10 @@ func (dsc *dataStoreCommand) lmove(srcKeyName, destKeyName string, srcLeft, dest
 	var item *listItem
 	if srcLeft {
 		item = srcList.head
-		dsc.lpopUnlocked(srcList, item)
+		dsc.lpopUnlocked(srcKeyName, srcList, item)
 	} else {
 		item = srcList.tail
-		dsc.rpopUnlocked(srcList, item)
+		dsc.rpopUnlocked(srcKeyName, srcList, item)
 	}
 	element := item.element
 
@@ -1542,11 +1556,6 @@ func (dsc *dataStoreCommand) lmove(srcKeyName, destKeyName string, srcLeft, dest
 		dsc.rpushUnlocked(destKeyName, destList, element)
 	}
 	uk.elements = 1
-
-	// clean up if source list became empty
-	if srcList.count == 0 {
-		dsc.ds.data.remove(srcKeyName)
-	}
 
 	output.data = respBulkString(element)
 	return
@@ -1574,7 +1583,7 @@ func (dsc *dataStoreCommand) lmpop(keyNames []string, left bool, count int) (out
 						break
 					}
 					elements = append(elements, string(item.element))
-					dsc.lpopUnlocked(list, item)
+					dsc.lpopUnlocked(keyName, list, item)
 					count--
 				}
 			} else {
@@ -1584,7 +1593,7 @@ func (dsc *dataStoreCommand) lmpop(keyNames []string, left bool, count int) (out
 						break
 					}
 					elements = append(elements, string(item.element))
-					dsc.rpopUnlocked(list, item)
+					dsc.rpopUnlocked(keyName, list, item)
 					count--
 				}
 			}
@@ -1815,14 +1824,14 @@ func (dsc *dataStoreCommand) ltrim(keyName string, start, stop int) (output resp
 	}
 
 	for start > 0 {
-		dsc.lpopUnlocked(list, list.head)
+		dsc.lpopUnlocked(keyName, list, list.head)
 		start--
 		stop--
 	}
 
 	stop++
 	for stop < list.count {
-		dsc.rpopUnlocked(list, list.tail)
+		dsc.rpopUnlocked(keyName, list, list.tail)
 	}
 
 	output.data = rstrOK

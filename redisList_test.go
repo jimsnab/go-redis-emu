@@ -682,6 +682,46 @@ func TestRedisLMoveSrcKeyGone(t *testing.T) {
 	}
 }
 
+func TestRedisLPopSrcKeyGone(t *testing.T) {
+	ts := NewRedisTestClient(t)
+	defer ts.Close()
+
+	output := ts.ProcessCommand("rpush", "key1", "fox")
+	if !output.isInt(1) {
+		t.Fatal("rpush error")
+	}
+
+	output = ts.ProcessCommand("lpop", "key1")
+	if !output.isString("fox") {
+		t.Fatal("lpop fail")
+	}
+
+	output = ts.ProcessCommand("keys", "*")
+	if !output.isArray() {
+		t.Fatal("key remove fail")
+	}
+}
+
+func TestRedisRPopSrcKeyGone(t *testing.T) {
+	ts := NewRedisTestClient(t)
+	defer ts.Close()
+
+	output := ts.ProcessCommand("rpush", "key1", "fox")
+	if !output.isInt(1) {
+		t.Fatal("rpush error")
+	}
+
+	output = ts.ProcessCommand("rpop", "key1")
+	if !output.isString("fox") {
+		t.Fatal("rpop fail")
+	}
+
+	output = ts.ProcessCommand("keys", "*")
+	if !output.isArray() {
+		t.Fatal("key remove fail")
+	}
+}
+
 func TestRedisLMPop(t *testing.T) {
 	ts := NewRedisTestClient(t)
 	defer ts.Close()
@@ -738,6 +778,11 @@ func TestRedisLMPop(t *testing.T) {
 	output = ts.ProcessCommand("lmpop", "1", "key1", "left")
 	if !output.isNull() {
 		t.Fatal("lmpop step 10 fail")
+	}
+
+	output = ts.ProcessCommand("keys", "*")
+	if !output.isArray() {
+		t.Fatal("key remove fail")
 	}
 
 	// second list has items test
@@ -1465,6 +1510,21 @@ func TestRedisLTrim(t *testing.T) {
 	}
 
 	// single item list
+	output = ts.ProcessCommand("lpush", "key1", "one")
+	if !output.isInt(1) {
+		t.Fatal("ltrim start the list fail")
+	}
+
+	output = ts.ProcessCommand("ltrim", "key1", "1", "1")
+	if !output.isString("OK") {
+		t.Fatal("ltrim empty fail")
+	}
+
+	output = ts.ProcessCommand("keys", "*")
+	if !output.isArray() {
+		t.Fatal("key remove fail")
+	}
+
 	output = ts.ProcessCommand("lpush", "key1", "one")
 	if !output.isInt(1) {
 		t.Fatal("ltrim start the list fail")

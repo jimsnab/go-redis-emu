@@ -39,7 +39,6 @@ type (
 		waiting     bool
 		closing     bool
 		inbound     []byte
-		respVersion int
 	}
 )
 
@@ -116,6 +115,8 @@ func (cc *clientCxn) IsCloseRequested() bool {
 	return cc.closing
 }
 
+var _ = requestAllCxnClose
+
 func requestAllCxnClose() {
 	processAllClients(func(id int64, cs *clientState) {
 		cc, ok := cs.client.(*clientCxn)
@@ -124,6 +125,8 @@ func requestAllCxnClose() {
 		}
 	})
 }
+
+var _ = waitForAllCxnClose
 
 func waitForAllCxnClose() {
 	for {

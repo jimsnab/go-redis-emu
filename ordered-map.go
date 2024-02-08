@@ -10,11 +10,6 @@ type (
 		m     map[respValue]respValue
 		order []respValue
 	}
-
-	orderedAnyMap struct {
-		m     map[any]any
-		order []any
-	}
 )
 
 func newOrderedMap() *orderedMap {
@@ -38,8 +33,7 @@ func (om *orderedMap) get(k string) (v any, exists bool) {
 }
 
 func (om *orderedMap) mustGet(k string) (v any) {
-	v, _ = om.m[k]
-	return
+	return om.m[k]
 }
 
 func (om *orderedMap) toNative() map[string]any {
@@ -88,30 +82,5 @@ func (orm *orderedRespMap) get(k respValue) (v respValue, exists bool) {
 
 func (orm *orderedRespMap) mustGet(k respValue) (v respValue) {
 	v = orm.m[k]
-	return
-}
-
-func newOrderedAnyMap() *orderedAnyMap {
-	return &orderedAnyMap{
-		m:     map[any]any{},
-		order: []any{},
-	}
-}
-
-func (oam *orderedAnyMap) set(k any, v any) {
-	_, exists := oam.m[k]
-	if !exists {
-		oam.order = append(oam.order, k)
-	}
-	oam.m[k] = v
-}
-
-func (oam *orderedAnyMap) get(k any) (v any, exists bool) {
-	v, exists = oam.m[k]
-	return
-}
-
-func (oam *orderedAnyMap) mustGet(k any) (v any) {
-	v, _ = oam.m[k]
 	return
 }

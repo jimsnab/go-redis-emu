@@ -25,8 +25,15 @@ const (
 	ZADD_INCR
 )
 
+var _ = newZSet // not yet fully implemented
 func newZSet() *zset {
-	return &zset{}
+	zs := &zset{}
+
+	// temporary disable warnings about incomplete work
+	_ = zs.add
+	_ = zs.keyRoot
+	_ = znode{"", 0, nil, nil, nil}
+	return zs
 }
 
 func (z *zset) add(key string, score float64, flags zaddFlags) (out respValue) {

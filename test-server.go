@@ -28,6 +28,8 @@ type (
 		iface           string
 		persistBasePath string
 		quitSignal      chan struct{}
+
+		disableClientSetInfo bool // special flag for redis client issue
 	}
 )
 
@@ -44,6 +46,11 @@ func NewEmulator(l lane.Lane, port int, iface string, persistBasePath string, qu
 	}
 
 	return
+}
+
+// special function for testing redis client library - this must be called before Start
+func (eng *RedisEmu) DisableClientSetInfo() {
+	eng.disableClientSetInfo = true
 }
 
 func (eng *RedisEmu) Port() int {
@@ -202,6 +209,9 @@ func (eng *RedisEmu) startServer() {
 	}
 
 	dispatcher := newCmdDispatcher(eng.port, eng.iface, cmds, info, eng.dss)
+	if eng.disableClientSetInfo {
+		dispatcher.disableCmd("client|setinfo")
+	}
 
 	eng.wg.Add(1)
 	go func() {

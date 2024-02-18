@@ -267,6 +267,11 @@ func newCmdDispatcher(port int, netInterface string, cmds redisCommands, info *r
 	return cd
 }
 
+func (cd *cmdDispatcher) disableCmd(cmdToken string) {
+	delete(cd.handlers, cmdToken)
+	delete(cd.active, cmdToken)
+}
+
 func (cd *cmdDispatcher) addHandlerWorker(cmds redisCommands, cmdInfo *redisInfoTable, cmdToken string, handler cmdHandler) (subCmds redisCommands) {
 	cutPoint := strings.LastIndex(cmdToken, "|")
 	if cutPoint >= 0 {
@@ -320,6 +325,7 @@ func (cd *cmdDispatcher) prepare(cs *clientState, input respValue) (ctx *cmdCont
 	cmdNameLower := strings.ToLower(cmdNameArg)
 
 	cmd, exists := cd.active[cmdNameLower]
+
 	if !exists {
 		l.Infof("unsupported command '%s'", cmdNameLower)
 

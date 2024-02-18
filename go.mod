@@ -4,8 +4,8 @@ go 1.21
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/jimsnab/go-lane v1.11.0
-	github.com/redis/go-redis/v9 v9.4.0
+	github.com/jimsnab/go-lane v1.18.1
+	github.com/redis/go-redis/v9 v9.5.0
 )
 
 require (

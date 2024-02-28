@@ -1194,6 +1194,11 @@ func TestRedisLRem(t *testing.T) {
 		t.Fatal("lrem single item remove fail")
 	}
 
+	keycheck := ts.ProcessCommand("keys", "key1")
+	if !keycheck.isValue([]any{}) {
+		t.Fatal("lrem should have removed the key")
+	}
+
 	// empty list
 	output = ts.ProcessCommand("lrem", "key1", "0", "cat")
 	if !output.isInt(0) {

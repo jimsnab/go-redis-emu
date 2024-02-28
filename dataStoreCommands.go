@@ -1668,7 +1668,7 @@ func (dsc *dataStoreCommand) lpos(keyName string, element string, forward bool, 
 	return
 }
 
-func (dsc *dataStoreCommand) removeUnlocked(list *storeList, item *listItem) {
+func (dsc *dataStoreCommand) removeUnlocked(keyName string, list *storeList, item *listItem) {
 	if item.prev != nil {
 		item.prev.next = item.next
 	} else {
@@ -1680,6 +1680,11 @@ func (dsc *dataStoreCommand) removeUnlocked(list *storeList, item *listItem) {
 		list.tail = item.prev
 	}
 	list.count--
+
+	if list.count == 0 {
+		// remove the key
+		dsc.ds.data.remove(keyName)
+	}
 
 	// item removed, dereference
 	item.next = nil
@@ -1709,7 +1714,7 @@ func (dsc *dataStoreCommand) lremove(keyName string, element string, count int) 
 		for item := list.head; item != nil && count > removed; {
 			next := item.next
 			if string(item.element) == element {
-				dsc.removeUnlocked(list, item)
+				dsc.removeUnlocked(keyName, list, item)
 				removed++
 			}
 			item = next
@@ -1719,7 +1724,7 @@ func (dsc *dataStoreCommand) lremove(keyName string, element string, count int) 
 		for item := list.tail; item != nil && count > removed; {
 			next := item.prev
 			if string(item.element) == element {
-				dsc.removeUnlocked(list, item)
+				dsc.removeUnlocked(keyName, list, item)
 				removed++
 			}
 			item = next

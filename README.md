@@ -24,7 +24,7 @@ you can do the following:
 
 ```go
 	// Start a server on localhost:7379 wihtout logging
-	redisServer, err := redisemu.NewServer(nil, 7379)
+	redisServer := redisemu.NewServer(nil, 7379)
 
 	// ... connect a client to 7379 and use it ...
 

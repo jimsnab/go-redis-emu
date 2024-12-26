@@ -15,7 +15,27 @@ However what's implemented should be trustworthy, as the unit tests of this
 emulator have good coverage and pass whether running against the emulator
 or real redis.
 
-# Simple Usage
+# Usage
+
+## Simple
+
+If all you want is a short-lived temporary server, such as what you need in a unit test,
+you can do the following:
+
+```go
+	// Start a server on localhost:7379 wihtout logging
+	redisServer, err := redisemu.NewServer(nil, 7379)
+
+	// ... connect a client to 7379 and use it ...
+
+	// Stop the server
+	redisServer.Close()
+```
+
+If you want logging, you can provide a `lane.Lane` in the first parameter. See
+[go-lane](https://github/jimsnab/go-lane).
+
+## Additional Controls
 
 Create an instance of the emulator as shown in the following fragment:
 
